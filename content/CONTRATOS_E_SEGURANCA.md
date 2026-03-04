@@ -25,11 +25,12 @@ A base da escalabilidade do Qorp Core é o **Manifesto**. Mesmo que o sistema co
 
 Para o lançamento inicial (Setor Único), focamos em uma segurança eficiente que não adicione complexidade desnecessária, mas que já prepare o terreno para o uso corporativo total.
 
-### Cenário A: Camada de Proteção Nativa (Simples e Direto)
-Ideal para a fase inicial de uma tarefa específica.
-- **Como funciona:** O Core utiliza **Instruções de Sistema Imutáveis** e **Filtros de Código**. 
-- **O Gatekeeper:** Antes da IA processar a ferramenta, o código verifica: "Este usuário tem a Role necessária para esta tarefa específica?".
-- **Vantagem:** Rapidez extrema na resposta e facilidade de depuração. É a base sólida para o primeiro setor.
+### Cenário A: Camada de Proteção Nativa (Hard Rules via Código)
+Ideal para a fase inicial de uma tarefa específica e para garantir 100% de previsibilidade.
+- **Como funciona:** O Core utiliza **Regras de Código (Python Puro)** que precedem qualquer ação da IA. 
+- **O Gatekeeper:** Antes do LLM ser chamado ou de uma ferramenta ser disparada, o código verifica: "O `Internal UUID` deste usuário possui o `flag` de acesso à ferramenta `X`?".
+- **Vantagem:** Segurança absoluta. Mesmo que a IA sofra um *Prompt Injection* e "queira" executar algo proibido, o código de execução nega o acesso. É o "Não" que não depende de interpretação semântica.
+- **Implementação:** Matriz de permissões carregada no `State` do grafo durante o nó de inicialização.
 
 ### Cenário B: Camada de Proteção com ModelGuard (Segurança Empresarial)
 Conforme o Qorp Core se expande para outros setores (RH, Financeiro) e manipula dados sensíveis de toda a empresa, ativamos o **ModelGuard**.

@@ -22,16 +22,16 @@ O Qorp Core utiliza um processo de "emparelhamento" para garantir que o número 
 
 ---
 
-## 3. Mapeamento Centralizado de Identidade
+## 3. Mapeamento Centralizado de Identidade (Identity Registry)
 
-O Core mantém uma tabela de identidade que atua como o "tradutor" para o Supervisor de Acesso:
+O Core mantém um **Registry de Identidades** que atua como o único tradutor de confiança para o Supervisor de Acesso. O ponto central aqui é o **Internal UUID**, que desvincula o usuário de qualquer canal específico.
 
-| Atributo | Origem Web (JWT) | Origem WhatsApp (MSISDN) |
-| :--- | :--- | :--- |
-| **Identificador** | `usr_f92...` | `551199...` |
-| **Autenticação** | Token JWT Assinado | Vínculo de Número Validado |
-| **Role/Permissões** | `gerente_comercial` | `gerente_comercial` (herdado) |
-| **Contexto/Memória** | Sessão `thread_01` | Sessão `thread_01` (Sincronizada) |
+| Atributo | Origem Web (JWT) | Origem WhatsApp (MSISDN) | **Internal UUID (Master Key)** |
+| :--- | :--- | :--- | :--- |
+| **Identificador Original** | `usr_f92...` | `551199...` | **`qorp_internal_001`** |
+| **Autenticação** | Token JWT Assinado | Vínculo de Número Validado | **Consolidada** |
+| **Role/Permissões** | `gerente_comercial` | `gerente_comercial` | **Habilitado via ID Mestre** |
+| **Contexto/Memória** | Sessão `thread_01` | Sessão `thread_01` | **Histórico Único** |
 
 ---
 
