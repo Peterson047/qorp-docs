@@ -1,164 +1,73 @@
-<div class="prose prose-indigo max-w-none">
-    <h1 style="color: #6366f1; font-weight: 800; font-size: 2.25rem; margin-bottom: 1.5rem;">Arquitetura Detalhada: Fluxo de Permissões e IAM Nexus</h1>
-    <p class="text-slate-600 text-lg">Este documento detalha o funcionamento interno do sistema de controle de acesso (IAM) do Nexus, desde a entrada do usuário até a execução segura de ferramentas.</p>
-    
-    <hr class="my-8 border-slate-200" />
+# Fluxo Completo de Permissões IAM Nexus
 
-    <h2 class="text-2xl font-bold text-slate-800 mb-6">🗺️ Visão Geral do Fluxo</h2>
-    
-    <div>
-        <div class="language-mermaid">
+Abaixo está a representação visual (Mermaid) e o passo a passo técnico da arquitetura que discutimos.
+
+```mermaid
 graph TD
-    subgraph "1. Camada de Entrada"
-        U["👤 Usuário: Maria"] -->|Solicitação: Pagar boleto| API["🌐 API Gateway (FastAPI)"]
-        U -->|Token OIDC Google| API
-    end
+subgraph "Camada de Entrada (Canal)"
+U[👤 Usuário: Maria] -->|Mensagem: 'Paga esse boleto'| API[🌐 API Nexus /chat]
+U -->|JWT Token (Google)| API
+end
 
-    subgraph "2. Camada de Identidade (IAM)"
-        API -->|Validar Identidade| IAM["🏛️ Identity Registry"]
-        IAM -->|Mapeamento de Grupos| DB_USER[("(📦 DB Users/Roles)")]
-        DB_USER -->|Cargo: Estagiário| IAM
-        IAM -->|Filtro de Políticas| POLICY["📜 Policy Engine"]
-        POLICY -->|Calcula Deny List| CONTEXT["🧠 Objeto de Contexto"]
-    end
+subgraph "Camada de Identidade (IAM)"
+API -->|Validar Token| IAM[🏛️ Identity Registry]
+IAM -->|Mapear Grupos Google| DB_USER[(📦 DB Users/Roles)]
+DB_USER -->|Cargo: Estagiário| IAM
+IAM -->|Filtra Deny Categories| POLICY[📜 Policy Engine]
+POLICY -->|Bloqueio: 'pagamentos', 'infra'| CONTEXT[🧠 Contexto de Permissão]
+end
 
-    subgraph "3. Camada de Orquestração (Core)"
-        CONTEXT -->|Contexto de Segurança| ORQ["🏗️ Orquestrador (LangGraph)"]
-        ORQ -->|Consultar Ferramentas| CAT["📂 Tool Registry"]
-        CAT -->|Todas as ferramentas globais| FILTER{"✂️ Filtro Dinâmico"}
-        
-        subgraph "Processo de Filtragem"
-            FILTER -->|Tag: mercado| T1["✅ get_stock"]
-            FILTER -->|Tag: pagamentos| T2["❌ pay_invoice"]
-            FILTER -->|Tag: infra| T3["❌ drop_table"]
-        end
-        
-        T1 -->|Apenas ferramentas permitidas| LLM["🤖 LLM (Gemini)"]
-    end
+subgraph "Camada de Orquestração (Core)"
+CONTEXT -->|Contexto + Mensagem| ORQ[🏗️ Orquestrador]
+ORQ -->|Consulta Catálogo| CAT[📂 Tool Registry]
+CAT -->|Todas as Tools| FILTER{✂️ Filtro Dinâmico}
 
-    subgraph "4. Camada de Execução e Auditoria"
-        LLM -->|Decisão Segura| RESP["💬 Resposta: Sem acesso"]
-        RESP -->|Exibe no Chat| U
-        
-        T1 -.->|Se fosse Diretor| EXEC["⚙️ Execução MCP/Python"]
-        EXEC -.->|Log Imutável| AUDIT[("(🛡️ Audit Trail)")]
-    end
+subgraph "Filtragem de Ferramentas"
+FILTER -->|Tag: mercado| T1[✅ get_stock]
+FILTER -->|Tag: pagamentos| T2[❌ pay_invoice]
+FILTER -->|Tag: infra| T3[❌ drop_table]
+end
 
-    style T2 fill:#fee2e2,stroke:#ef4444,stroke-width:2px
-    style T3 fill:#fee2e2,stroke:#ef4444,stroke-width:2px
-    style T1 fill:#f0fdf4,stroke:#22c55e,stroke-width:2px
-    style IAM fill:#faf5ff,stroke:#a855f7,stroke-width:2px
-    style ORQ fill:#eef2ff,stroke:#6366f1,stroke-width:4px
-        </div>
-    </div>
+T1 -->|Injeta apenas ferramentas permitidas| LLM[🤖 Modelo LLM]
+end
 
-    <h2 class="text-2xl font-bold text-slate-800 mt-12 mb-6">🛠️ Detalhamento das Etapas</h2>
+subgraph "Camada de Execução (Skills)"
+LLM -->|Decisão: 'Não tenho ferramentas de pagamento'| RESP[💬 Resposta ao Usuário]
+RESP -->|Exibe no Chat| U
 
-    <h3 class="text-xl font-semibold text-slate-700 mb-4">1. Mapeamento de Grupos (Identity Registry)</h3>
-    <div class="overflow-x-auto rounded-xl border border-slate-200">
-        <table class="w-full text-sm text-left">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-                <tr>
-                    <th class="px-6 py-4">Origem (Google Group)</th>
-                    <th class="px-6 py-4">Destino (Nexus Role)</th>
-                    <th class="px-6 py-4">Nível de Acesso (Escopo)</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                <tr>
-                    <td class="px-6 py-4">financeiro-estagiarios@</td>
-                    <td class="px-6 py-4"><span class="font-bold text-slate-500">Estagiário</span></td>
-                    <td class="px-6 py-4">Somente leitura / consultas básicas</td>
-                </tr>
-                <tr class="bg-slate-50/50">
-                    <td class="px-6 py-4">financeiro-analistas@</td>
-                    <td class="px-6 py-4"><span class="font-bold text-indigo-600">Analista</span></td>
-                    <td class="px-6 py-4">Edição de planilhas / consultas de balanço</td>
-                </tr>
-                <tr>
-                    <td class="px-6 py-4">diretoria@</td>
-                    <td class="px-6 py-4"><span class="font-bold text-slate-900">Diretor</span></td>
-                    <td class="px-6 py-4">Acesso total / aprovações financeiras</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+T1 -.->|Se fosse Diretor| EXEC[⚙️ Execução MCP/Python]
+EXEC -.->|Log de Auditoria| AUDIT[(🛡️ Audit Trail)]
+end
 
-    <h3 class="text-xl font-semibold text-slate-700 mt-10 mb-4">2. Motor de Políticas (Policy Engine)</h3>
-    <div class="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r-lg mb-6">
-        <p class="text-orange-800 font-medium">O Nexus adota uma estratégia de <b>Segurança por Omissão</b>. Ferramentas não permitidas sequer são injetadas no contexto do LLM.</p>
-    </div>
+style T2 fill:#ffcccc,stroke:#ff0000
+style T3 fill:#ffcccc,stroke:#ff0000
+style T1 fill:#ccffcc,stroke:#00aa00
+style IAM fill:#f9f,stroke:#333
+style ORQ fill:#bbf,stroke:#333,stroke-width:4px
+```
 
-    <div class="overflow-x-auto rounded-xl border border-slate-200">
-        <table class="w-full text-sm text-left">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-                <tr>
-                    <th class="px-6 py-4">Cargo (Role)</th>
-                    <th class="px-6 py-4">Categorias Bloqueadas</th>
-                    <th class="px-6 py-4">Ferramentas Bloqueadas</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                <tr>
-                    <td class="px-6 py-4 font-bold">Estagiário</td>
-                    <td class="px-6 py-4"><span class="text-red-500 font-medium">pagamentos, infra, seguranca</span></td>
-                    <td class="px-6 py-4"><code>search_salary</code></td>
-                </tr>
-                <tr class="bg-slate-50/50">
-                    <td class="px-6 py-4 font-bold">Analista</td>
-                    <td class="px-6 py-4"><span class="text-orange-500 font-medium">infra, seguranca</span></td>
-                    <td class="px-6 py-4"><code>pay_invoice</code> (apenas consulta)</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+## Passo a Passo Técnico (Simulação):
 
-    <h3 class="text-xl font-semibold text-slate-700 mt-10 mb-4">3. Objeto de Contexto (JSON)</h3>
-    <pre class="bg-slate-900 text-slate-100 p-6 rounded-xl overflow-x-auto font-mono text-sm">
-{
-  "user": {
-    "id": "maria_01",
-    "email": "maria@empresa.com",
-    "role": "Estagiário"
-  },
-  "security": {
-    "deny_tags": ["pagamentos", "infra", "seguranca"],
-    "deny_tools": ["search_salary"],
-    "allowed_scopes": ["consultas_basicas"]
-  }
-}
-    </pre>
+### 1. Entrada (OIDC)
+O usuário se autentica com sua conta corporativa do Google. O Nexus recebe um **JWT (JSON Web Token)** que contém o
+`email` e os `grupos` do Google Workspace.
 
-    <h3 class="text-xl font-semibold text-slate-700 mt-10 mb-4">4. Filtro Dinâmico no Orquestrador</h3>
-    <div class="overflow-x-auto rounded-xl border border-slate-200 mb-12">
-        <table class="w-full text-sm text-left">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
-                <tr>
-                    <th class="px-6 py-4">Ferramenta</th>
-                    <th class="px-6 py-4">Tag</th>
-                    <th class="px-6 py-4">Comparação</th>
-                    <th class="px-6 py-4">Resultado para IA</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-                <tr>
-                    <td class="px-6 py-4"><code>get_stock</code></td>
-                    <td class="px-6 py-4">mercado</td>
-                    <td class="px-6 py-4 text-slate-500">Permitido</td>
-                    <td class="px-6 py-4"><b class="text-green-600">Injetada</b></td>
-                </tr>
-                <tr class="bg-slate-50/50">
-                    <td class="px-6 py-4"><code>pay_invoice</code></td>
-                    <td class="px-6 py-4">pagamentos</td>
-                    <td class="px-6 py-4 text-red-500">Bloqueada (Tag)</td>
-                    <td class="px-6 py-4"><b class="text-red-600">Omitida</b></td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+### 2. O Mapeador (Identity Registry)
+O sistema consulta o seu banco (Postgres) e vê que o grupo `g-estagiarios-financeiro` do Google está mapeado para a Role
+`Estagiário` no Nexus.
+- **Contexto Gerado:** `user_id: maria_01`, `role: estagiario`, `denials: [pagamentos, infra]`.
 
-    <div class="mt-20 pt-8 border-t border-slate-100 flex justify-between items-center">
-        <div class="text-slate-400 text-sm italic">Arquitetura Nexus AI Core</div>
-        <div class="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wider">Versão 1.0</div>
-    </div>
-</div>
+### 3. O Filtro Dinâmico (Orquestrador)
+O Orquestrador (no seu código `nexus.py`) pega a lista global de 100 ferramentas e faz um filtro rápido:
+- *"Essa ferramenta tem a tag 'pagamentos'? Sim. A Maria tem essa tag bloqueada? Sim. Então, retiro da lista."*
+
+### 4. Injeção no Modelo (Tool Binding)
+O LLM (Gemini) recebe a mensagem da Maria, mas na lista de ferramentas disponíveis para ele, **não existe** a função
+`pay_invoice`.
+- Para o modelo, é impossível sugerir o pagamento porque ele não "conhece" essa habilidade no contexto atual.
+
+### 5. Auditoria (Audit Trail)
+Mesmo que o acesso seja negado, o Nexus grava no log:
+- `USER`: Maria | `ACTION`: Perguntou sobre pagamentos | `RESULT`: Negado por Policy (Tag: pagamentos).
+
+Isso garante que você possa auditar quem está tentando "forçar" a barra no sistema. 🏗️
