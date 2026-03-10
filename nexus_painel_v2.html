@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Painel de Gerenciamento</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --panel: #ffffff;
+  --panel2: #fafaf8;
+  --border: #e2e0d8;
+  --border2: #d0cdc3;
+  --text: #1a1916;
+  --muted: #6b6860;
+  --dim: #a8a49c;
+  --accent: #1a56db;
+  --accent-s: #e8f0fe;
+  --green: #0f7b44;
+  --green-s: #e8f7f0;
+  --green-b: #9fe8c3;
+  --red: #c0392b;
+  --red-s: #fdf0ee;
+  --red-b: #f5b8b2;
+  --yellow: #a05c00;
+  --yellow-s: #fef8e7;
+  --yellow-b: #fad97a;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; }
+
+/* ── App shell ── */
+.app { display:grid; grid-template-columns:260px 1fr; grid-template-rows:52px 1fr; min-height:100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  grid-column:1/-1;
+  background:var(--panel); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:16px; padding:0 20px;
+}
+.topbar-logo { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.topbar-logo .logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.topbar-sub { font-size:12px; color:var(--dim); font-family:var(--mono); }
+.topbar-sep { flex:1; }
+.topbar-search {
+  display:flex; align-items:center; gap:8px; background:var(--panel2);
+  border:1px solid var(--border2); border-radius:6px; padding:6px 12px;
+  font-size:12px; color:var(--dim); font-family:var(--mono); width:200px; cursor:text;
+}
+.topbar-badge {
+  font-family:var(--mono); font-size:11px; padding:3px 10px;
+  background:var(--accent-s); color:var(--accent); border-radius:20px; font-weight:500;
+}
+.topbar-avatar {
+  width:28px; height:28px; border-radius:50%; background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff; font-family:var(--mono); flex-shrink:0;
+}
+
+/* ── Left sidebar ── */
+.sidebar {
+  background:var(--panel); border-right:1px solid var(--border);
+  overflow-y:auto; display:flex; flex-direction:column;
+}
+.section-head {
+  padding:16px 20px 10px; border-bottom:1px solid var(--border);
+  font-size:11px; font-weight:600; color:var(--dim);
+  text-transform:uppercase; letter-spacing:.07em;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav-group { padding:12px 0 4px; }
+.nav-group-label {
+  font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase;
+  letter-spacing:.07em; padding:4px 20px 6px;
+}
+.nav-link {
+  display:flex; align-items:center; gap:9px; padding:8px 20px;
+  font-size:13px; color:var(--muted); cursor:pointer; transition:all .12s;
+  border-left:2px solid transparent; user-select:none;
+}
+.nav-link:hover { background:var(--panel2); color:var(--text); }
+.nav-link.active { background:var(--accent-s); color:var(--accent); border-left-color:var(--accent); font-weight:500; }
+.nav-link svg { width:14px; height:14px; flex-shrink:0; opacity:.6; }
+.nav-link.active svg { opacity:1; }
+.nav-count {
+  margin-left:auto; font-family:var(--mono); font-size:10px;
+  padding:1px 6px; border-radius:10px;
+  background:var(--panel2); border:1px solid var(--border); color:var(--dim);
+}
+.nav-link.active .nav-count { background:var(--accent); color:#fff; border-color:var(--accent); }
+.nav-count.alert { background:var(--red-s); color:var(--red); border-color:var(--red-b); }
+
+/* ── Main content ── */
+.main { overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ── Screen system ── */
+.screen { display:none; flex-direction:column; gap:20px; padding:24px; }
+.screen.active { display:flex; }
+
+/* ── Page header ── */
+.page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.page-title { font-size:20px; font-weight:700; color:var(--text); letter-spacing:-.02em; margin-bottom:4px; }
+.page-desc { font-size:13px; color:var(--muted); }
+.btn-row { display:flex; gap:8px; flex-shrink:0; }
+.btn {
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; border:none;
+  transition:background .15s; font-family:var(--sans); white-space:nowrap;
+}
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1547c0; }
+.btn-ghost { background:var(--panel); border:1px solid var(--border2); color:var(--muted); }
+.btn-ghost:hover { border-color:var(--border); color:var(--text); background:var(--panel2); }
+
+/* ── Cards ── */
+.card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; overflow:hidden; box-shadow:var(--shadow);
+}
+.card-head {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.card-title { font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.card-subtitle { font-size:11px; color:var(--dim); font-family:var(--mono); margin-top:1px; }
+
+/* ── Stats ── */
+.stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.stats-row-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.stat-card {
+  background:var(--panel); border:1px solid var(--border);
+  border-radius:12px; padding:18px 20px; box-shadow:var(--shadow);
+}
+.stat-label { font-size:11px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px; font-family:var(--mono); }
+.stat-num { font-size:30px; font-weight:600; font-family:var(--mono); color:var(--text); letter-spacing:-.03em; line-height:1; margin-bottom:6px; }
+.stat-sub { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+
+/* ── Tags ── */
+.tag {
+  display:inline-flex; align-items:center; font-family:var(--mono);
+  font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap;
+}
+.tag-green  { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.tag-red    { background:var(--red-s); color:var(--red); border:1px solid var(--red-b); }
+.tag-yellow { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.tag-blue   { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.tag-gray   { background:var(--panel2); color:var(--dim); border:1px solid var(--border); }
+
+/* ── Table ── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+thead { background:var(--panel2); }
+th { padding:9px 16px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); border-bottom:1px solid var(--border); white-space:nowrap; font-family:var(--mono); }
+td { padding:10px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--muted); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--panel2); }
+
+/* Avatar */
+.avatar {
+  width:28px; height:28px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff; font-family:var(--mono);
+}
+
+/* Status dot */
+.status-dot { display:inline-flex; align-items:center; gap:5px; font-size:12px; }
+.dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.dot-green { background:var(--green); }
+.dot-red   { background:var(--red); }
+.dot-yellow{ background:#d97706; }
+.dot-gray  { background:var(--dim); }
+
+/* Row btn */
+.row-btn {
+  font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:4px;
+  border:1px solid var(--border); background:transparent; color:var(--muted);
+  cursor:pointer; transition:all .12s;
+}
+.row-btn:hover { border-color:var(--border2); color:var(--text); background:var(--panel2); }
+
+/* Mono text */
+.mono { font-family:var(--mono); }
+
+/* ── Activity feed ── */
+.activity-item {
+  display:flex; gap:12px; padding:12px 20px; align-items:flex-start;
+  border-bottom:1px solid var(--border); animation:fadeSlide .25s ease both;
+}
+.activity-item:last-child { border-bottom:none; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.activity-icon {
+  width:28px; height:28px; border-radius:8px; flex-shrink:0; margin-top:1px;
+  display:flex; align-items:center; justify-content:center; font-size:12px;
+}
+.icon-deny  { background:var(--red-s);   border:1px solid var(--red-b); }
+.icon-allow { background:var(--green-s); border:1px solid var(--green-b); }
+.icon-info  { background:var(--accent-s);border:1px solid #bfdbfe; }
+.icon-warn  { background:var(--yellow-s);border:1px solid var(--yellow-b); }
+.activity-label { font-size:12px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.activity-desc  { font-size:12px; color:var(--muted); line-height:1.5; }
+.activity-time  { font-family:var(--mono); font-size:10px; color:var(--dim); flex-shrink:0; padding-top:3px; margin-left:auto; }
+code { font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--border); padding:1px 5px; border-radius:3px; color:var(--text); }
+
+/* ── Deny toggle (reutilizado do simulator) ── */
+.deny-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 11px; background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; cursor:pointer; transition:all .15s; user-select:none; margin-bottom:4px;
+}
+.deny-row:hover { border-color:var(--border2); background:#f0ede6; }
+.deny-row.active-deny { background:var(--red-s); border-color:var(--red-b); }
+.deny-row.active-deny .deny-name { color:var(--red); }
+.deny-name { font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:500; }
+.deny-toggle {
+  width:32px; height:18px; border-radius:9px; background:var(--border2);
+  position:relative; transition:background .2s; flex-shrink:0;
+}
+.deny-toggle::after {
+  content:''; position:absolute; width:12px; height:12px; border-radius:50%;
+  background:#fff; top:3px; left:3px; transition:transform .2s;
+  box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.deny-row.active-deny .deny-toggle { background:var(--red); }
+.deny-row.active-deny .deny-toggle::after { transform:translateX(14px); }
+
+/* ── Filter chips ── */
+.filter-bar { display:flex; gap:6px; padding:12px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+.filter-chip {
+  font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:4px;
+  border:1px solid var(--border); background:var(--panel2); color:var(--muted);
+  cursor:pointer; transition:all .12s;
+}
+.filter-chip:hover { border-color:var(--border2); color:var(--text); }
+.filter-chip.active { background:var(--accent-s); border-color:var(--accent); color:var(--accent); }
+.filter-sep { flex:1; }
+.filter-input {
+  font-family:var(--mono); font-size:11px; padding:5px 10px; border-radius:4px;
+  border:1px solid var(--border); background:var(--panel2); color:var(--text);
+  outline:none; width:180px; transition:border-color .15s;
+}
+.filter-input:focus { border-color:var(--accent); }
+
+/* ── Role tree ── */
+.role-tree { padding:16px 20px; display:flex; flex-direction:column; gap:5px; }
+.role-row {
+  display:flex; align-items:center; gap:10px; padding:9px 12px;
+  border:1px solid var(--border); border-radius:6px; background:var(--panel2);
+  transition:background .12s;
+}
+.role-row:hover { background:#f0ede6; }
+.role-level {
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  width:28px; height:28px; border-radius:6px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--panel); border:1px solid var(--border); color:var(--muted);
+}
+.role-name { font-size:13px; font-weight:600; color:var(--text); min-width:110px; }
+.role-denials { display:flex; gap:4px; flex-wrap:wrap; flex:1; }
+.role-users { font-family:var(--mono); font-size:11px; color:var(--dim); margin-left:auto; white-space:nowrap; }
+
+/* ── Tools grid ── */
+.tools-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0; }
+.tool-card {
+  padding:12px 16px; border-right:1px solid var(--border); border-bottom:1px solid var(--border);
+  transition:background .15s; cursor:pointer;
+}
+.tool-card:hover { background:var(--panel2); }
+.tool-name { font-family:var(--mono); font-size:12px; font-weight:500; margin-bottom:4px; color:var(--text); }
+.tool-tag-badge { font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:3px; display:inline-block; margin-bottom:6px; }
+.tool-meta { font-size:11px; color:var(--dim); display:flex; align-items:center; gap:4px; }
+
+/* ── User edit panel (slide-in sim) ── */
+.edit-overlay {
+  position:fixed; inset:0; background:rgba(26,25,22,.35); z-index:100;
+  display:none; align-items:flex-start; justify-content:flex-end;
+}
+.edit-overlay.open { display:flex; }
+.edit-panel {
+  background:var(--panel); height:100vh; width:420px; box-shadow:-4px 0 24px rgba(0,0,0,.12);
+  display:flex; flex-direction:column; overflow:hidden; margin-top:52px;
+}
+.edit-head {
+  padding:16px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.edit-title { font-size:14px; font-weight:600; color:var(--text); }
+.edit-close {
+  width:28px; height:28px; border-radius:6px; border:1px solid var(--border);
+  background:var(--panel2); display:flex; align-items:center; justify-content:center;
+  font-size:16px; cursor:pointer; color:var(--muted); transition:all .12s; line-height:1;
+}
+.edit-close:hover { background:var(--red-s); color:var(--red); border-color:var(--red-b); }
+.edit-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; }
+.edit-footer { padding:16px 20px; border-top:1px solid var(--border); display:flex; gap:8px; }
+.field { margin-bottom:0; }
+.field label { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+.field input, .field select {
+  width:100%; padding:8px 11px; border:1px solid var(--border2); border-radius:6px;
+  font-family:var(--sans); font-size:13px; color:var(--text); background:var(--panel2);
+  outline:none; transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus {
+  border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,86,219,.08);
+}
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.edit-section-label {
+  font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.07em;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+
+/* ── Audit trace items ── */
+.audit-row {
+  display:flex; gap:12px; padding:10px 20px; align-items:center;
+  border-bottom:1px solid var(--border); animation:fadeSlide .2s ease both;
+}
+.audit-row:last-child { border-bottom:none; }
+.audit-row:hover { background:var(--panel2); }
+.audit-decision {
+  font-family:var(--mono); font-size:10px; font-weight:700;
+  padding:2px 8px; border-radius:3px; flex-shrink:0; min-width:68px; text-align:center;
+}
+.audit-user   { min-width:150px; }
+.audit-tool   { font-family:var(--mono); font-size:11px; color:var(--muted); min-width:170px; }
+.audit-reason { font-size:11px; color:var(--dim); flex:1; }
+.audit-time   { font-family:var(--mono); font-size:10px; color:var(--dim); flex-shrink:0; }
+
+/* ── Summary bar ── */
+.summary-bar {
+  display:flex; gap:0; border-bottom:1px solid var(--border);
+}
+.summary-item {
+  display:flex; align-items:center; gap:10px; padding:14px 20px;
+  border-right:1px solid var(--border);
+}
+.summary-item:last-child { border-right:none; }
+.summary-num { font-family:var(--mono); font-size:22px; font-weight:600; }
+.summary-label { font-size:12px; color:var(--dim); line-height:1.3; }
+
+/* ── Progress bars ── */
+.progress-bar { height:6px; background:var(--panel2); border-radius:3px; border:1px solid var(--border); overflow:hidden; flex:1; }
+.progress-fill { height:100%; background:var(--accent); border-radius:3px; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* ── Tabs ── */
+.tabs { display:flex; gap:0; }
+.tab {
+  padding:9px 16px; font-size:13px; color:var(--muted); cursor:pointer;
+  border-bottom:2px solid transparent; transition:all .12s; margin-bottom:-1px;
+}
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:500; }
+
+/* ── Channel matrix ── */
+.matrix-table td, .matrix-table th { text-align:center; padding:8px 10px; }
+.matrix-table td:first-child, .matrix-table th:first-child { text-align:left; padding-left:16px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Topbar ── -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-dot"></div>
+      Nexus
+    </div>
+    <span class="topbar-sub">/ painel de gerenciamento</span>
+    <div class="topbar-sep"></div>
+    <div class="topbar-search">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      buscar...
+    </div>
+    <span class="topbar-badge">admin</span>
+    <div class="topbar-avatar">A</div>
+  </header>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="section-head">Nexus IAM</div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Visão Geral</div>
+      <div class="nav-link active" onclick="nav('dashboard')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Identidade</div>
+      <div class="nav-link" onclick="nav('usuarios')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="4.5" r="2.5"/><path d="M2 12c0-2.76 2.24-4.5 5-4.5s5 1.74 5 4.5"/></svg>
+        Usuários
+        <span class="nav-count">24</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Sistema</div>
+      <div class="nav-link" onclick="nav('cargos')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v2.5M4.5 3.5L6.2 5.2M9.5 3.5L7.8 5.2"/><circle cx="7" cy="7" r="1.8"/><circle cx="2" cy="5.5" r="1.3"/><circle cx="12" cy="5.5" r="1.3"/><circle cx="7" cy="12" r="1.3"/><path d="M3.2 6.6L5 8.5M10.8 6.6L9 8.5M7 8.8v1.9"/></svg>
+        Cargos & Restrições
+      </div>
+      <div class="nav-link" onclick="nav('ferramentas')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2a3 3 0 0 0-2.96 3.5L1.5 10l.9 2.6 2.6-.9L9.46 7.5A3 3 0 1 0 9 2z"/></svg>
+        Ferramentas
+        <span class="nav-count">11</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-group-label">Monitoramento</div>
+      <div class="nav-link" onclick="nav('auditoria')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h10M2 7h8M2 10.5h5"/></svg>
+        Auditoria
+        <span class="nav-count alert">3</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════
+       SCREENS
+  ══════════════════════════════════════════ -->
+  <main class="main">
+
+    <!-- ──────────── DASHBOARD ──────────── -->
+    <div class="screen active" id="s-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">Status do sistema Nexus em tempo real</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost">↓ Exportar</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Usuários Ativos</div>
+          <div class="stat-num">24</div>
+          <div class="stat-sub"><span class="tag tag-green">+2 esta semana</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Canais Online</div>
+          <div class="stat-num">2</div>
+          <div class="stat-sub">
+            <span class="status-dot"><span class="dot dot-green"></span>web</span>
+            &nbsp;·&nbsp;
+            <span class="status-dot"><span class="dot dot-green"></span>whatsapp</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Negações Hoje</div>
+          <div class="stat-num" style="color:var(--red)">13</div>
+          <div class="stat-sub"><span class="tag tag-red">3 requerem atenção</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tokens (semana)</div>
+          <div class="stat-num">148k</div>
+          <div class="stat-sub"><span class="tag tag-blue">↑ 12%</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;">
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Atividade Recente</div>
+              <div class="card-subtitle">últimas decisões do IAM</div>
+            </div>
+            <span class="tag tag-gray">ao vivo</span>
+          </div>
+          <div>
+            <div class="activity-item">
+              <div class="activity-icon icon-deny">✗</div>
+              <div style="flex:1">
+                <div class="activity-label">Acesso negado — bigquery_query</div>
+                <div class="activity-desc">maria.silva@empresa.com · Estagiário · tag <code>financial</code> bloqueada por cargo</div>
+              </div>
+              <div class="activity-time">09:41</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon icon-allow">✓</div>
+              <div style="flex:1">
+                <div class="activity-label">Acesso permitido — web_search</div>
+                <div class="activity-desc">joao.costa@empresa.com · Analista · tag <code>public</code></div>
+              </div>
+              <div class="activity-time">09:38</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon icon-deny">✗</div>
+              <div style="flex:1">
+                <div class="activity-label">Acesso negado — pay_invoice</div>
+                <div class="activity-desc">ana.lima@empresa.com · Coordenador · tag <code>payments</code> bloqueada por cargo</div>
+              </div>
+              <div class="activity-time">09:21</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon icon-info">→</div>
+              <div style="flex:1">
+                <div class="activity-label">WhatsApp vinculado</div>
+                <div class="activity-desc">pedro.alves@empresa.com · Diretor · +55 11 9 9999-0001</div>
+              </div>
+              <div class="activity-time">08:54</div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-icon icon-allow">+</div>
+              <div style="flex:1">
+                <div class="activity-label">Usuário criado</div>
+                <div class="activity-desc">lucas.ramos@empresa.com · Assistente · via Google OAuth</div>
+              </div>
+              <div class="activity-time">08:30</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right col -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Channels -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">Canais</div></div>
+            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="status-dot" style="font-size:13px;font-weight:500;color:var(--text)"><span class="dot dot-green"></span>Web (Metas)</span>
+                <span class="tag tag-green">online</span>
+              </div>
+              <div style="font-size:12px;color:var(--dim);font-family:var(--mono)">18 sessões · JWT RS256</div>
+              <div style="height:1px;background:var(--border)"></div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="status-dot" style="font-size:13px;font-weight:500;color:var(--text)"><span class="dot dot-green"></span>WhatsApp (n8n)</span>
+                <span class="tag tag-green">online</span>
+              </div>
+              <div style="font-size:12px;color:var(--dim);font-family:var(--mono)">6 números vinculados</div>
+            </div>
+          </div>
+
+          <!-- Tokens por cargo -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">Tokens por Cargo</div></div>
+            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;color:var(--muted);min-width:90px">Diretor</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:72%"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:36px;text-align:right">72k</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;color:var(--muted);min-width:90px">Analista</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:48%;opacity:.7"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:36px;text-align:right">48k</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:12px;color:var(--muted);min-width:90px">Coordenador</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:28%;opacity:.5"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:36px;text-align:right">28k</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── USUÁRIOS ──────────── -->
+    <div class="screen" id="s-usuarios">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Usuários</div>
+          <div class="page-desc">Gerenciamento de contas, cargos e vínculos de canal</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost">↓ Exportar</button>
+          <button class="btn btn-primary">+ Convidar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <!-- Tabs + Filter bar -->
+        <div class="card-head" style="flex-direction:column;align-items:stretch;gap:0;padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px 0;border-bottom:1px solid var(--border);">
+            <div class="tabs">
+              <div class="tab active">Todos <span style="opacity:.5;margin-left:4px">24</span></div>
+              <div class="tab">Ativos <span style="opacity:.5;margin-left:4px">21</span></div>
+              <div class="tab">WA Vinculado <span style="opacity:.5;margin-left:4px">6</span></div>
+            </div>
+            <select style="font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:4px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);margin-bottom:4px;">
+              <option>Todos os cargos</option>
+              <option>CEO</option><option>Diretor</option><option>Coordenador</option>
+              <option>Analista</option><option>Assistente</option><option>Estagiário</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Cargo</th>
+                <th>Canal</th>
+                <th>Restrições</th>
+                <th>Status</th>
+                <th>Último acesso</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#1a56db">P</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Pedro Alves</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">pedro.alves@empresa.com</div></div></div></td>
+                <td><span class="tag tag-yellow">Diretor</span></td>
+                <td><div style="display:flex;gap:4px"><span class="tag tag-blue">web</span><span class="tag tag-green">wa</span></div></td>
+                <td><span class="tag tag-gray">1 exceção</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 4min</td>
+                <td><button class="row-btn" onclick="openEdit('Pedro Alves','pedro.alves@empresa.com','Diretor')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#0f7b44">A</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Ana Lima</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">ana.lima@empresa.com</div></div></div></td>
+                <td><span class="tag tag-yellow">Coordenador</span></td>
+                <td><span class="tag tag-blue">web</span></td>
+                <td><span class="tag tag-gray">padrão</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 18min</td>
+                <td><button class="row-btn" onclick="openEdit('Ana Lima','ana.lima@empresa.com','Coordenador')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#7c3aed">J</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">João Costa</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">joao.costa@empresa.com</div></div></div></td>
+                <td><span class="tag tag-blue">Analista</span></td>
+                <td><div style="display:flex;gap:4px"><span class="tag tag-blue">web</span><span class="tag tag-green">wa</span></div></td>
+                <td><span class="tag tag-gray">padrão</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 22min</td>
+                <td><button class="row-btn" onclick="openEdit('João Costa','joao.costa@empresa.com','Analista')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#a05c00">M</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Maria Silva</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">maria.silva@empresa.com</div></div></div></td>
+                <td><span class="tag tag-gray">Estagiário</span></td>
+                <td><span class="tag tag-blue">web</span></td>
+                <td><span class="tag tag-gray">padrão</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 41min</td>
+                <td><button class="row-btn" onclick="openEdit('Maria Silva','maria.silva@empresa.com','Estagiário')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#c0392b">L</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Lucas Ramos</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">lucas.ramos@empresa.com</div></div></div></td>
+                <td><span class="tag tag-gray">Assistente</span></td>
+                <td><span class="tag tag-blue">web</span></td>
+                <td><span class="tag tag-red">2 exceções</span></td>
+                <td><div class="status-dot"><span class="dot dot-yellow"></span>inativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 3 dias</td>
+                <td><button class="row-btn" onclick="openEdit('Lucas Ramos','lucas.ramos@empresa.com','Assistente')">editar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── CARGOS ──────────── -->
+    <div class="screen" id="s-cargos">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cargos & Restrições</div>
+          <div class="page-desc">Hierarquia de cargos e deny list acumulada — restrições são herdadas pelos níveis abaixo</div>
+        </div>
+        <button class="btn btn-ghost">+ Adicionar restrição</button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;">
+
+        <!-- Tree -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Árvore de Cargos</div>
+              <div class="card-subtitle">deny_tags acumuladas por nível</div>
+            </div>
+          </div>
+          <div class="role-tree">
+            <div class="role-row">
+              <div class="role-level" style="background:var(--accent);color:#fff;border-color:var(--accent)">100</div>
+              <div class="role-name">CEO</div>
+              <div class="role-denials"><span class="tag tag-green">acesso total</span></div>
+              <span class="role-users">1 usuário</span>
+            </div>
+            <div style="padding-left:22px;display:flex;flex-direction:column;gap:5px;">
+              <div class="role-row">
+                <div class="role-level" style="background:var(--yellow-s);border-color:var(--yellow-b);color:var(--yellow)">80</div>
+                <div class="role-name">Diretor</div>
+                <div class="role-denials"><span class="tag tag-red">admin</span></div>
+                <span class="role-users">3 usuários</span>
+              </div>
+              <div style="padding-left:22px;display:flex;flex-direction:column;gap:5px;">
+                <div class="role-row">
+                  <div class="role-level" style="background:var(--yellow-s);border-color:var(--yellow-b);color:var(--yellow)">60</div>
+                  <div class="role-name">Coordenador</div>
+                  <div class="role-denials"><span class="tag tag-red">admin</span><span class="tag tag-red">payments</span></div>
+                  <span class="role-users">5 usuários</span>
+                </div>
+                <div style="padding-left:22px;display:flex;flex-direction:column;gap:5px;">
+                  <div class="role-row">
+                    <div class="role-level" style="background:var(--accent-s);border-color:#bfdbfe;color:var(--accent)">40</div>
+                    <div class="role-name">Analista</div>
+                    <div class="role-denials"><span class="tag tag-red">admin</span><span class="tag tag-red">payments</span><span class="tag tag-red">financial</span></div>
+                    <span class="role-users">8 usuários</span>
+                  </div>
+                  <div style="padding-left:22px;display:flex;flex-direction:column;gap:5px;">
+                    <div class="role-row">
+                      <div class="role-level">20</div>
+                      <div class="role-name">Assistente</div>
+                      <div class="role-denials"><span class="tag tag-red">admin</span><span class="tag tag-red">payments</span><span class="tag tag-red">financial</span><span class="tag tag-red">internal</span></div>
+                      <span class="role-users">4 usuários</span>
+                    </div>
+                    <div style="padding-left:22px;">
+                      <div class="role-row">
+                        <div class="role-level">10</div>
+                        <div class="role-name">Estagiário</div>
+                        <div class="role-denials"><span class="tag tag-red">admin</span><span class="tag tag-red">payments</span><span class="tag tag-red">financial</span><span class="tag tag-red">internal</span></div>
+                        <span class="role-users">3 usuários</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Matriz -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">Matriz de Acesso</div></div>
+          <div class="table-wrap">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>Cargo</th>
+                  <th><span class="tag tag-green" style="font-size:9px">pub</span></th>
+                  <th><span class="tag tag-blue" style="font-size:9px">int</span></th>
+                  <th><span class="tag tag-yellow" style="font-size:9px">fin</span></th>
+                  <th><span class="tag tag-yellow" style="font-size:9px">pay</span></th>
+                  <th><span class="tag tag-red" style="font-size:9px">adm</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">CEO</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td></tr>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">Diretor</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--red)">✗</td></tr>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">Coord.</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td></tr>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">Analista</td><td style="color:var(--green)">✓</td><td style="color:var(--green)">✓</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td></tr>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">Assist.</td><td style="color:var(--green)">✓</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td></tr>
+                <tr><td style="font-size:12px;font-weight:600;color:var(--text)">Estag.</td><td style="color:var(--green)">✓</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td><td style="color:var(--red)">✗</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ──────────── FERRAMENTAS ──────────── -->
+    <div class="screen" id="s-ferramentas">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ferramentas</div>
+          <div class="page-desc">Tool Registry — instâncias únicas injetadas via bind_tools()</div>
+        </div>
+        <button class="btn btn-primary">+ Nova ferramenta</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Pool Global</div>
+            <div class="card-subtitle">11 ferramentas registradas</div>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <span class="filter-chip active" onclick="filterTools(this,'all')">todas</span>
+            <span class="filter-chip" onclick="filterTools(this,'public')">public</span>
+            <span class="filter-chip" onclick="filterTools(this,'internal')">internal</span>
+            <span class="filter-chip" onclick="filterTools(this,'financial')">financial</span>
+            <span class="filter-chip" onclick="filterTools(this,'admin')">admin</span>
+          </div>
+        </div>
+
+        <div class="summary-bar">
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--green)">3</div>
+            <div class="summary-label">public<br><span style="font-size:10px;font-family:var(--mono)">public</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--accent)">3</div>
+            <div class="summary-label">internal<br><span style="font-size:10px;font-family:var(--mono)">public</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--yellow)">3</div>
+            <div class="summary-label">financial/payments<br><span style="font-size:10px;font-family:var(--mono)">restricted</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--red)">2</div>
+            <div class="summary-label">admin<br><span style="font-size:10px;font-family:var(--mono)">restricted</span></div>
+          </div>
+        </div>
+
+        <div class="tools-grid" id="tools-grid">
+          <!-- rendered by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ──────────── AUDITORIA ──────────── -->
+    <div class="screen" id="s-auditoria">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Auditoria</div>
+          <div class="page-desc">Log de decisões do IAM com rastreabilidade por trace_id</div>
+        </div>
+        <button class="btn btn-ghost">↓ Exportar CSV</button>
+      </div>
+
+      <div class="stats-row-3">
+        <div class="stat-card">
+          <div class="stat-label">Decisões hoje</div>
+          <div class="stat-num">147</div>
+          <div class="stat-sub"><span class="tag tag-green">134 permitidas</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bloqueadas hoje</div>
+          <div class="stat-num" style="color:var(--red)">13</div>
+          <div class="stat-sub"><span class="tag tag-red">3 requerem atenção</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Usuários únicos</div>
+          <div class="stat-num">9</div>
+          <div class="stat-sub"><span class="tag tag-blue">2 canais</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filter-bar">
+          <span class="filter-chip active" onclick="chipToggle(this)">todos</span>
+          <span class="filter-chip" onclick="chipToggle(this)">denied</span>
+          <span class="filter-chip" onclick="chipToggle(this)">allowed</span>
+          <span class="filter-chip" onclick="chipToggle(this)">exceção individual</span>
+          <div class="filter-sep"></div>
+          <input class="filter-input" placeholder="buscar usuário ou tool…">
+        </div>
+
+        <div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">NEGADO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#a05c00;width:22px;height:22px;font-size:9px">M</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Maria Silva</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Estagiário</div></div></div></div>
+            <div class="audit-tool">bigquery_query</div>
+            <div class="audit-reason">role_denial · tag <code>financial</code> bloqueada para Estagiário</div>
+            <div class="audit-time">09:41:03</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#7c3aed;width:22px;height:22px;font-size:9px">J</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">João Costa</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Analista</div></div></div></div>
+            <div class="audit-tool">web_search</div>
+            <div class="audit-reason">padrão · tag <code>public</code> · sem restrições</div>
+            <div class="audit-time">09:38:51</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">NEGADO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#0f7b44;width:22px;height:22px;font-size:9px">A</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Ana Lima</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Coordenador</div></div></div></div>
+            <div class="audit-tool">pay_invoice</div>
+            <div class="audit-reason">role_denial · tag <code>payments</code> bloqueada para Coordenador</div>
+            <div class="audit-time">09:21:17</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#1a56db;width:22px;height:22px;font-size:9px">P</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Pedro Alves</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Diretor</div></div></div></div>
+            <div class="audit-tool">bigquery_query</div>
+            <div class="audit-reason">padrão · tag <code>financial</code> · Diretor (lvl 80) atende mínimo</div>
+            <div class="audit-time">09:18:44</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">NEGADO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#c0392b;width:22px;height:22px;font-size:9px">L</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Lucas Ramos</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Assistente</div></div></div></div>
+            <div class="audit-tool">store_user_fact</div>
+            <div class="audit-reason">user_denial · exceção individual cadastrada pelo admin</div>
+            <div class="audit-time">08:55:02</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ──────────── EDIT PANEL (slide-in) ──────────── -->
+<div class="edit-overlay" id="edit-overlay" onclick="closeEdit(event)">
+  <div class="edit-panel" onclick="event.stopPropagation()">
+    <div class="edit-head">
+      <div>
+        <div class="edit-title" id="edit-title">Editar Usuário</div>
+        <div style="font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:2px" id="edit-sub"></div>
+      </div>
+      <div class="edit-close" onclick="closeEdit()">×</div>
+    </div>
+    <div class="edit-body">
+
+      <div class="edit-section-label">Dados</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Nome</label>
+          <input id="ep-name" type="text">
+        </div>
+        <div class="field">
+          <label>Cargo</label>
+          <select id="ep-role">
+            <option>CEO</option><option>Diretor</option><option>Coordenador</option>
+            <option>Analista</option><option>Assistente</option><option>Estagiário</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input id="ep-email" type="email">
+      </div>
+      <div class="field">
+        <label>WhatsApp vinculado</label>
+        <input id="ep-wa" type="text" placeholder="Nenhum número vinculado">
+      </div>
+
+      <div class="edit-section-label" style="margin-top:4px">Exceções Individuais <span style="font-weight:400;color:var(--dim);font-family:var(--mono);font-size:10px;margin-left:6px">user_denials</span></div>
+
+      <div id="ep-deny-grid"></div>
+
+      <div class="edit-section-label">Status</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;">Desativar conta</button>
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;color:var(--red);border-color:var(--red-b)">Desvincular WA</button>
+      </div>
+
+    </div>
+    <div class="edit-footer">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" onclick="closeEdit()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;">Salvar alterações</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA ─────────────────────────────────────
+const TOOLS = [
+  { name:'web_search',            tag:'public',    sensitivity:'public' },
+  { name:'knowledge_base_search', tag:'public',    sensitivity:'public' },
+  { name:'get_address_from_cep',  tag:'public',    sensitivity:'public' },
+  { name:'store_user_fact',       tag:'internal',  sensitivity:'public' },
+  { name:'search_user_memory',    tag:'internal',  sensitivity:'public' },
+  { name:'get_stock_price',       tag:'internal',  sensitivity:'public' },
+  { name:'bigquery_query',        tag:'financial', sensitivity:'restricted' },
+  { name:'pay_invoice',           tag:'payments',  sensitivity:'restricted' },
+  { name:'approve_payment',       tag:'payments',  sensitivity:'restricted' },
+  { name:'admin_panel',           tag:'admin',     sensitivity:'restricted' },
+  { name:'delete_database',       tag:'admin',     sensitivity:'restricted' },
+];
+
+const TAG_COLORS = {
+  public:   { bg:'#e8f7f0', text:'#0f7b44', border:'#9fe8c3' },
+  internal: { bg:'#e8f0fe', text:'#1a56db', border:'#bfdbfe' },
+  financial:{ bg:'#fef8e7', text:'#a05c00', border:'#fad97a' },
+  payments: { bg:'#fef8e7', text:'#a05c00', border:'#fad97a' },
+  admin:    { bg:'#fdf0ee', text:'#c0392b', border:'#f5b8b2' },
+};
+
+const AGENTS_BY_TOOL = {
+  web_search:            2, knowledge_base_search:3, get_address_from_cep:1,
+  store_user_fact:       2, search_user_memory:2, get_stock_price:1,
+  bigquery_query:        2, pay_invoice:1, approve_payment:1,
+  admin_panel:           1, delete_database:1,
+};
+
+// ─── NAV ─────────────────────────────────────
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes(`'${id}'`)) l.classList.add('active');
+  });
+  if (id === 'ferramentas') renderTools('all');
+}
+
+// ─── TOOLS GRID ──────────────────────────────
+function renderTools(filter) {
+  const grid = document.getElementById('tools-grid');
+  grid.innerHTML = '';
+  TOOLS.filter(t => filter === 'all' || t.tag === filter).forEach((tool, i) => {
+    const c = TAG_COLORS[tool.tag];
+    const card = document.createElement('div');
+    card.className = 'tool-card';
+    card.style.animationDelay = (i * 30) + 'ms';
+    card.innerHTML = `
+      <div class="tool-name">${tool.name}</div>
+      <div><span class="tool-tag-badge" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${tool.tag}</span></div>
+      <div class="tool-meta"><span class="dot" style="background:${tool.sensitivity==='restricted'?'#d97706':'#0f7b44'}"></span>${AGENTS_BY_TOOL[tool.name]} agente(s) · ${tool.sensitivity}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function filterTools(el, filter) {
+  document.querySelectorAll('#s-ferramentas .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderTools(filter);
+}
+
+// ─── EDIT PANEL ──────────────────────────────
+const editDenied = new Set();
+
+function openEdit(name, email, role) {
+  document.getElementById('ep-name').value  = name;
+  document.getElementById('ep-email').value = email;
+  document.getElementById('ep-role').value  = role;
+  document.getElementById('ep-wa').value    = role === 'Diretor' ? '+55 11 9 9999-0001' : '';
+  document.getElementById('edit-title').textContent = name;
+  document.getElementById('edit-sub').textContent   = email;
+
+  // Build deny toggles
+  editDenied.clear();
+  if (name === 'Lucas Ramos') { editDenied.add('store_user_fact'); editDenied.add('search_user_memory'); }
+  if (name === 'Pedro Alves') { editDenied.add('delete_database'); }
+
+  const grid = document.getElementById('ep-deny-grid');
+  grid.innerHTML = '';
+  TOOLS.forEach(tool => {
+    const row = document.createElement('div');
+    row.className = 'deny-row' + (editDenied.has(tool.name) ? ' active-deny' : '');
+    const c = TAG_COLORS[tool.tag];
+    row.innerHTML = `
+      <span class="deny-name">${tool.name}</span>
+      <span style="font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;background:${c.bg};color:${c.text};border:1px solid ${c.border}">${tool.tag}</span>
+      <div class="deny-toggle"></div>
+    `;
+    row.onclick = () => {
+      if (editDenied.has(tool.name)) { editDenied.delete(tool.name); row.classList.remove('active-deny'); }
+      else { editDenied.add(tool.name); row.classList.add('active-deny'); }
+    };
+    grid.appendChild(row);
+  });
+
+  document.getElementById('edit-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEdit(e) {
+  if (e && e.target !== document.getElementById('edit-overlay')) return;
+  document.getElementById('edit-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ─── CHIPS ──────────────────────────────────
+function chipToggle(el) {
+  el.closest('.filter-bar').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ─── TABS ─────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', function() {
+    this.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// Init
+renderTools('all');
+</script>
+</body>
+</html>
