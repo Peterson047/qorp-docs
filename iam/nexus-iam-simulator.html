@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus IAM Simulator</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --panel: #ffffff;
+  --panel2: #fafaf8;
+  --border: #e2e0d8;
+  --border2: #d0cdc3;
+  --text: #1a1916;
+  --muted: #6b6860;
+  --dim: #a8a49c;
+  --accent: #1a56db;
+  --accent-s: #e8f0fe;
+  --green: #0f7b44;
+  --green-s: #e8f7f0;
+  --green-b: #9fe8c3;
+  --red: #c0392b;
+  --red-s: #fdf0ee;
+  --red-b: #f5b8b2;
+  --yellow: #a05c00;
+  --yellow-s: #fef8e7;
+  --yellow-b: #fad97a;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ── Layout ── */
+.app { display: grid; grid-template-columns: 360px 1fr; grid-template-rows: 52px 1fr; min-height: 100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  grid-column: 1/-1;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+}
+.topbar-logo { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text); display:flex; align-items:center; gap:8px; }
+.topbar-logo .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.topbar-sub { font-size: 12px; color: var(--dim); font-family: var(--mono); }
+.topbar-sep { flex:1; }
+.topbar-badge {
+  font-family: var(--mono); font-size: 11px; padding: 3px 10px;
+  background: var(--accent-s); color: var(--accent); border-radius: 20px; font-weight: 500;
+}
+
+/* ── Left Panel ── */
+.left-panel {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+.section-head {
+  padding: 16px 20px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px; font-weight: 600; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .07em;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.form-block { padding: 16px 20px; border-bottom: 1px solid var(--border); }
+
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .05em; }
+
+.field input, .field select {
+  width: 100%; padding: 8px 11px;
+  border: 1px solid var(--border2); border-radius: 6px;
+  font-family: var(--sans); font-size: 13px; color: var(--text);
+  background: var(--panel2); outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,86,219,.08);
+}
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Denial toggles */
+.deny-grid { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.deny-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 11px; background: var(--panel2); border: 1px solid var(--border);
+  border-radius: 6px; cursor: pointer; transition: all .15s; user-select: none;
+}
+.deny-row:hover { border-color: var(--border2); background: #f0ede6; }
+.deny-row.active-deny { background: var(--red-s); border-color: var(--red-b); }
+.deny-row.active-deny .deny-name { color: var(--red); }
+.deny-name { font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 500; }
+.deny-tag-badge {
+  font-family: var(--mono); font-size: 10px; padding: 1px 7px; border-radius: 3px;
+  background: var(--panel2); border: 1px solid var(--border2); color: var(--dim);
+}
+.deny-toggle {
+  width: 32px; height: 18px; border-radius: 9px; background: var(--border2);
+  position: relative; transition: background .2s; flex-shrink: 0; margin-left: 8px;
+}
+.deny-toggle::after {
+  content:''; position:absolute; width:12px; height:12px; border-radius:50%;
+  background: white; top:3px; left:3px; transition: transform .2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,.2);
+}
+.deny-row.active-deny .deny-toggle { background: var(--red); }
+.deny-row.active-deny .deny-toggle::after { transform: translateX(14px); }
+
+/* Simulate button */
+.simulate-btn {
+  margin: 16px 20px;
+  width: calc(100% - 40px);
+  padding: 11px;
+  background: var(--accent);
+  color: white; border: none; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  cursor: pointer; letter-spacing: .01em;
+  transition: background .15s, transform .1s;
+}
+.simulate-btn:hover { background: #1547c0; }
+.simulate-btn:active { transform: scale(.98); }
+
+/* User card preview */
+.user-preview {
+  margin: 0 20px 16px;
+  padding: 12px 14px;
+  background: var(--panel2); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.up-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.up-avatar {
+  width: 32px; height:32px; border-radius:50%;
+  background: var(--accent); color:white;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; flex-shrink:0;
+}
+.up-name { font-size:13px; font-weight:600; color:var(--text); }
+.up-email { font-size:11px; color:var(--dim); font-family:var(--mono); }
+.up-meta { display:flex; gap:6px; flex-wrap:wrap; }
+
+/* ── Right Panel ── */
+.right-panel {
+  overflow-y: auto; padding: 24px;
+  display: flex; flex-direction: column; gap: 20px;
+}
+
+/* Graph */
+.graph-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.graph-head {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.graph-title { font-size: 13px; font-weight: 600; color: var(--text); display:flex; align-items:center; gap:8px; }
+.graph-subtitle { font-size:11px; color:var(--dim); font-family:var(--mono); }
+
+canvas#graphCanvas {
+  display: block; width: 100%; height: 320px;
+  background: var(--panel2);
+}
+
+/* Step trace */
+.trace-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
+}
+.trace-list { padding: 4px 0; }
+.trace-item {
+  display: flex; gap: 12px; padding: 10px 20px; align-items: flex-start;
+  border-bottom: 1px solid var(--border); animation: fadeSlide .25s ease both;
+}
+.trace-item:last-child { border-bottom: none; }
+@keyframes fadeSlide { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+
+.trace-step {
+  width:22px; height:22px; border-radius:50%; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:700; font-family:var(--mono); margin-top:1px;
+}
+.trace-step.ok { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.trace-step.fail { background:var(--red-s); color:var(--red); border:1px solid var(--red-b); }
+.trace-step.info { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.trace-step.warn { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+
+.trace-content { flex:1; }
+.trace-label { font-size:12px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.trace-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+.trace-desc code { font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--border); padding:1px 5px; border-radius:3px; color:var(--text); }
+
+.trace-result {
+  font-family:var(--mono); font-size:10px; font-weight:600;
+  padding: 1px 7px; border-radius:3px; align-self:center; flex-shrink:0;
+}
+.result-allow { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.result-deny  { background:var(--red-s); color:var(--red); border:1px solid var(--red-b); }
+.result-skip  { background:var(--panel2); color:var(--dim); border:1px solid var(--border); }
+
+/* Tools result grid */
+.tools-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
+}
+.tools-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0; }
+.tool-card {
+  padding: 12px 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  transition: background .15s;
+  animation: fadeSlide .2s ease both;
+}
+.tool-card:hover { background: var(--panel2); }
+.tool-name { font-family:var(--mono); font-size:12px; font-weight:500; margin-bottom:4px; }
+.tool-tag { font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:3px; display:inline-block; margin-bottom:6px; }
+.tool-status { font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; }
+.tool-status .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+.tool-card.allowed .tool-name { color: var(--green); }
+.tool-card.allowed .dot { background: var(--green); }
+.tool-card.allowed .tool-status { color: var(--green); }
+.tool-card.allowed .tool-tag { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+
+.tool-card.denied .tool-name { color: var(--red); }
+.tool-card.denied .dot { background: var(--red); }
+.tool-card.denied .tool-status { color: var(--red); }
+.tool-card.denied .tool-tag { background:var(--red-s); color:var(--red); border:1px solid var(--red-b); }
+
+/* Security context display */
+.ctx-panel {
+  background: var(--panel); border: 1px solid var(--border);
+  border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
+}
+.ctx-json {
+  padding: 16px 20px; font-family: var(--mono); font-size:12px; line-height:1.8;
+  background: #fafaf8; overflow-x: auto;
+}
+.jk { color: #1a56db; }
+.js { color: #0f7b44; }
+.jn { color: #a05c00; }
+.jb { color: #7c3aed; }
+.jc { color: #a8a49c; }
+
+/* Tags */
+.tag {
+  display:inline-flex; align-items:center; font-family:var(--mono);
+  font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap;
+}
+.tag-green  { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.tag-red    { background:var(--red-s); color:var(--red); border:1px solid var(--red-b); }
+.tag-yellow { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.tag-blue   { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.tag-gray   { background:var(--panel2); color:var(--dim); border:1px solid var(--border); }
+
+/* Empty state */
+.empty-state {
+  padding: 48px 20px; text-align:center; color:var(--dim);
+  font-size:13px; line-height:1.7;
+}
+.empty-state .icon { font-size:32px; margin-bottom:12px; opacity:.5; }
+
+/* Pulse animation on active node */
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.5} }
+.processing { animation: pulse .8s infinite; }
+
+/* Summary bar */
+.summary-bar {
+  display:flex; gap:12px; padding:12px 20px; border-bottom:1px solid var(--border);
+  flex-wrap:wrap;
+}
+.summary-item { display:flex; align-items:center; gap:6px; }
+.summary-num { font-family:var(--mono); font-size:18px; font-weight:600; }
+.summary-label { font-size:11px; color:var(--dim); }
+.summary-divider { width:1px; background:var(--border); align-self:stretch; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="dot"></div>
+      Nexus IAM
+    </div>
+    <span class="topbar-sub">/ permission simulator</span>
+    <div class="topbar-sep"></div>
+    <span class="topbar-badge">v1.0 · simulador</span>
+  </header>
+
+  <!-- Left: Form -->
+  <aside class="left-panel">
+
+    <div class="section-head">Cadastro de Usuário</div>
+
+    <div class="form-block">
+      <div class="field-row">
+        <div class="field">
+          <label>Nome</label>
+          <input id="f-name" type="text" value="Maria Silva" placeholder="Nome completo">
+        </div>
+        <div class="field">
+          <label>Cargo</label>
+          <select id="f-role">
+            <option value="CEO">CEO</option>
+            <option value="Diretor">Diretor</option>
+            <option value="Coordenador">Coordenador</option>
+            <option value="Analista">Analista</option>
+            <option value="Assistente">Assistente</option>
+            <option value="Estagiário" selected>Estagiário</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>E-mail Google</label>
+        <input id="f-email" type="email" value="maria.silva@empresa.com">
+      </div>
+      <div class="field">
+        <label>Departamento</label>
+        <select id="f-dept">
+          <option value="geral">Geral</option>
+          <option value="rh">RH</option>
+          <option value="financeiro">Financeiro</option>
+          <option value="ti">TI</option>
+          <option value="operacoes">Operações</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-head">
+      Exceções Individuais
+      <span style="font-size:10px;font-weight:400;color:var(--dim)">user_denials</span>
+    </div>
+
+    <div class="form-block">
+      <div class="deny-grid" id="deny-grid"></div>
+    </div>
+
+    <!-- Preview -->
+    <div id="user-preview" class="user-preview" style="display:none">
+      <div class="up-row">
+        <div class="up-avatar" id="prev-avatar">M</div>
+        <div>
+          <div class="up-name" id="prev-name">Maria Silva</div>
+          <div class="up-email" id="prev-email">maria.silva@empresa.com</div>
+        </div>
+      </div>
+      <div class="up-meta" id="prev-meta"></div>
+    </div>
+
+    <button class="simulate-btn" id="simulate-btn" onclick="runSimulation()">
+      ▶ Simular Permissões
+    </button>
+  </aside>
+
+  <!-- Right: Visualization -->
+  <div class="right-panel" id="right-panel">
+
+    <!-- Graph -->
+    <div class="graph-panel">
+      <div class="graph-head">
+        <div>
+          <div class="graph-title">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M4 7h6M7 4v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Grafo de Permissões
+          </div>
+          <div class="graph-subtitle">Hierarquia · PolicyEngine · ToolFilter</div>
+        </div>
+        <span id="graph-status" class="tag tag-gray">aguardando</span>
+      </div>
+      <canvas id="graphCanvas"></canvas>
+    </div>
+
+    <!-- Empty -->
+    <div class="empty-state" id="empty-state">
+      <div class="icon">⬡</div>
+      Configure o usuário e clique em <strong>Simular Permissões</strong><br>para ver o grafo e o trace em tempo real.
+    </div>
+
+    <!-- Results (hidden until sim) -->
+    <div id="results-wrap" style="display:none; display:flex; flex-direction:column; gap:20px;">
+
+      <!-- Trace -->
+      <div class="trace-panel">
+        <div class="graph-head">
+          <div>
+            <div class="graph-title">Policy Engine — Trace</div>
+            <div class="graph-subtitle">Decisões em sequência</div>
+          </div>
+          <span id="trace-summary" class="tag tag-gray"></span>
+        </div>
+        <div class="trace-list" id="trace-list"></div>
+      </div>
+
+      <!-- Tools -->
+      <div class="tools-panel">
+        <div class="graph-head">
+          <div>
+            <div class="graph-title">Ferramentas Injetadas no LLM</div>
+            <div class="graph-subtitle">bind_tools() após filtro</div>
+          </div>
+        </div>
+        <div class="summary-bar" id="tools-summary"></div>
+        <div class="tools-grid" id="tools-grid"></div>
+      </div>
+
+      <!-- SecurityContext -->
+      <div class="ctx-panel">
+        <div class="graph-head">
+          <div>
+            <div class="graph-title">SecurityContext Gerado</div>
+            <div class="graph-subtitle">Objeto cacheado no Redis</div>
+          </div>
+          <span class="tag tag-gray" style="font-size:10px">TTL: 3600s</span>
+        </div>
+        <div class="ctx-json" id="ctx-json"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const ROLES = {
+  'CEO':         { level: 100, parent: null },
+  'Diretor':     { level: 80,  parent: 'CEO' },
+  'Coordenador': { level: 60,  parent: 'Diretor' },
+  'Analista':    { level: 40,  parent: 'Coordenador' },
+  'Assistente':  { level: 20,  parent: 'Analista' },
+  'Estagiário':  { level: 10,  parent: 'Assistente' },
+};
+
+// Default role denials (what each role CAN'T do — inherited downward)
+// These are CUMULATIVE going DOWN the tree
+const ROLE_DENY_TAGS = {
+  'CEO':         [],
+  'Diretor':     ['admin'],
+  'Coordenador': ['admin', 'payments'],
+  'Analista':    ['admin', 'payments', 'financial'],
+  'Assistente':  ['admin', 'payments', 'financial', 'internal'],
+  'Estagiário':  ['admin', 'payments', 'financial', 'internal'],
+};
+
+const TOOLS = [
+  { name: 'web_search',            tag: 'public',    sensitivity: 'public' },
+  { name: 'knowledge_base_search', tag: 'public',    sensitivity: 'public' },
+  { name: 'get_address_from_cep',  tag: 'public',    sensitivity: 'public' },
+  { name: 'store_user_fact',       tag: 'internal',  sensitivity: 'public' },
+  { name: 'search_user_memory',    tag: 'internal',  sensitivity: 'public' },
+  { name: 'get_stock_price',       tag: 'internal',  sensitivity: 'public' },
+  { name: 'bigquery_query',        tag: 'financial', sensitivity: 'restricted' },
+  { name: 'pay_invoice',           tag: 'payments',  sensitivity: 'restricted' },
+  { name: 'approve_payment',       tag: 'payments',  sensitivity: 'restricted' },
+  { name: 'admin_panel',           tag: 'admin',     sensitivity: 'restricted' },
+  { name: 'delete_database',       tag: 'admin',     sensitivity: 'restricted' },
+];
+
+const TAG_COLORS = {
+  public:     { bg:'#e8f7f0', text:'#0f7b44', border:'#9fe8c3' },
+  internal:   { bg:'#e8f0fe', text:'#1a56db', border:'#bfdbfe' },
+  financial:  { bg:'#fef8e7', text:'#a05c00', border:'#fad97a' },
+  payments:   { bg:'#fef8e7', text:'#a05c00', border:'#fad97a' },
+  admin:      { bg:'#fdf0ee', text:'#c0392b', border:'#f5b8b2' },
+};
+
+// ─── BUILD DENY TOGGLES ──────────────────────────────────────────────────────
+const userDenied = new Set();
+
+function buildDenyGrid() {
+  const grid = document.getElementById('deny-grid');
+  grid.innerHTML = '';
+  TOOLS.forEach(tool => {
+    const row = document.createElement('div');
+    row.className = 'deny-row';
+    row.id = `deny-${tool.name}`;
+    const c = TAG_COLORS[tool.tag];
+    row.innerHTML = `
+      <span class="deny-name">${tool.name}</span>
+      <span class="deny-tag-badge" style="background:${c.bg};color:${c.text};border-color:${c.border}">${tool.tag}</span>
+      <div class="deny-toggle"></div>
+    `;
+    row.onclick = () => {
+      if (userDenied.has(tool.name)) {
+        userDenied.delete(tool.name);
+        row.classList.remove('active-deny');
+      } else {
+        userDenied.add(tool.name);
+        row.classList.add('active-deny');
+      }
+      updatePreview();
+    };
+    grid.appendChild(row);
+  });
+}
+
+buildDenyGrid();
+
+// ─── PREVIEW ────────────────────────────────────────────────────────────────
+function updatePreview() {
+  const name  = document.getElementById('f-name').value.trim() || 'Usuário';
+  const role  = document.getElementById('f-role').value;
+  const email = document.getElementById('f-email').value.trim();
+  const dept  = document.getElementById('f-dept').value;
+
+  const prev = document.getElementById('user-preview');
+  prev.style.display = 'block';
+  document.getElementById('prev-avatar').textContent = name[0]?.toUpperCase() || 'U';
+  document.getElementById('prev-name').textContent = name;
+  document.getElementById('prev-email').textContent = email;
+
+  const meta = document.getElementById('prev-meta');
+  const lvl = ROLES[role].level;
+  meta.innerHTML = `
+    <span class="tag tag-blue">${role}</span>
+    <span class="tag tag-gray">lvl ${lvl}</span>
+    <span class="tag tag-gray">${dept}</span>
+    ${userDenied.size > 0 ? `<span class="tag tag-red">${userDenied.size} exceção(ões)</span>` : ''}
+  `;
+}
+
+['f-name','f-email','f-role','f-dept'].forEach(id =>
+  document.getElementById(id).addEventListener('input', updatePreview)
+);
+updatePreview();
+
+// ─── CANVAS GRAPH ────────────────────────────────────────────────────────────
+const canvas = document.getElementById('graphCanvas');
+const ctx2d = canvas.getContext('2d');
+let animFrame = null;
+let graphState = { nodes: [], edges: [], activeNodeIdx: -1, phase: 'idle' };
+
+function resizeCanvas() {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width  = rect.width  * window.devicePixelRatio;
+  canvas.height = 320        * window.devicePixelRatio;
+  canvas.style.width  = rect.width + 'px';
+  canvas.style.height = '320px';
+  ctx2d.scale(window.devicePixelRatio, window.devicePixelRatio);
+  if (graphState.nodes.length) drawGraph();
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function buildGraphNodes(role, userDenySet) {
+  const W = canvas.width / window.devicePixelRatio;
+  const H = 320;
+  const roleNames = Object.keys(ROLES);
+  const nodes = [];
+  const edges = [];
+
+  // Hierarchy column (left)
+  const hx = 120;
+  const hy_start = 40;
+  const hy_step  = (H - 80) / (roleNames.length - 1);
+
+  roleNames.forEach((r, i) => {
+    const isActive = r === role;
+    const isAncestor = isRoleAncestor(r, role);
+    nodes.push({
+      id: `role_${r}`, type: 'role', label: r,
+      x: hx, y: hy_start + i * hy_step,
+      active: isActive, ancestor: isAncestor,
+      level: ROLES[r].level,
+    });
+    if (i > 0) {
+      edges.push({ from: `role_${roleNames[i-1]}`, to: `role_${r}`, type: 'hierarchy' });
+    }
+  });
+
+  // Policy Engine node (center)
+  nodes.push({ id: 'policy', type: 'engine', label: 'Policy\nEngine', x: W/2, y: H/2, active: false });
+
+  // Security context node
+  nodes.push({ id: 'ctx', type: 'ctx', label: 'Security\nContext', x: W/2 + 120, y: H/2, active: false });
+
+  // Edges from active role to policy engine
+  edges.push({ from: `role_${role}`, to: 'policy', type: 'active', animated: true });
+
+  // Tool nodes (right column)
+  const tx = W - 110;
+  const tools_y_start = 20;
+  const tools_y_step  = (H - 40) / (TOOLS.length - 1);
+
+  const denyTags = ROLE_DENY_TAGS[role] || [];
+
+  TOOLS.forEach((tool, i) => {
+    const deniedByRole = denyTags.includes(tool.tag);
+    const deniedByUser = userDenySet.has(tool.name);
+    const allowed = !deniedByRole && !deniedByUser;
+    nodes.push({
+      id: `tool_${tool.name}`, type: 'tool', label: tool.name,
+      x: tx, y: tools_y_start + i * tools_y_step,
+      allowed, deniedByRole, deniedByUser, tag: tool.tag,
+    });
+    edges.push({
+      from: 'policy', to: `tool_${tool.name}`,
+      type: allowed ? 'allow' : 'deny', animated: false,
+    });
+  });
+
+  // Policy → Context
+  edges.push({ from: 'policy', to: 'ctx', type: 'ctx', animated: true });
+
+  return { nodes, edges };
+}
+
+function isRoleAncestor(ancestorRole, targetRole) {
+  let cur = ROLES[targetRole]?.parent;
+  while (cur) {
+    if (cur === ancestorRole) return true;
+    cur = ROLES[cur]?.parent;
+  }
+  return false;
+}
+
+function getNode(nodes, id) { return nodes.find(n => n.id === id); }
+
+let animT = 0;
+function drawGraph() {
+  const { nodes, edges, activeNodeIdx } = graphState;
+  const W = canvas.width  / window.devicePixelRatio;
+  const H = canvas.height / window.devicePixelRatio;
+
+  ctx2d.clearRect(0, 0, W, H);
+
+  // Background subtle grid
+  ctx2d.strokeStyle = '#eceae4';
+  ctx2d.lineWidth = 0.5;
+  for (let x = 0; x < W; x += 32) { ctx2d.beginPath(); ctx2d.moveTo(x,0); ctx2d.lineTo(x,H); ctx2d.stroke(); }
+  for (let y = 0; y < H; y += 32) { ctx2d.beginPath(); ctx2d.moveTo(0,y); ctx2d.lineTo(W,y); ctx2d.stroke(); }
+
+  // Draw edges
+  edges.forEach(edge => {
+    const from = getNode(nodes, edge.from);
+    const to   = getNode(nodes, edge.to);
+    if (!from || !to) return;
+
+    let color = '#d0cdc3';
+    if (edge.type === 'allow')     color = '#9fe8c3';
+    if (edge.type === 'deny')      color = '#f5b8b2';
+    if (edge.type === 'active')    color = '#1a56db';
+    if (edge.type === 'ctx')       color = '#fad97a';
+    if (edge.type === 'hierarchy') color = '#d0cdc3';
+
+    ctx2d.beginPath();
+    ctx2d.strokeStyle = color;
+    ctx2d.lineWidth = edge.type === 'active' || edge.type === 'ctx' ? 2 : 1;
+    ctx2d.setLineDash(edge.animated ? [4, 4] : []);
+    if (edge.animated) {
+      ctx2d.lineDashOffset = -animT * 0.08;
+    }
+
+    // Bezier
+    const mx = (from.x + to.x) / 2;
+    ctx2d.moveTo(from.x, from.y);
+    ctx2d.bezierCurveTo(mx, from.y, mx, to.y, to.x, to.y);
+    ctx2d.stroke();
+    ctx2d.setLineDash([]);
+
+    // Arrowhead
+    if (edge.type !== 'hierarchy') {
+      drawArrow(to.x, to.y, from.x, from.y, color, edge.type === 'active' || edge.type === 'ctx' ? 2 : 1.5);
+    }
+  });
+
+  // Draw nodes
+  nodes.forEach((node, idx) => {
+    const isAnimating = idx === activeNodeIdx;
+    if (node.type === 'role') drawRoleNode(node, isAnimating);
+    else if (node.type === 'engine') drawEngineNode(node, isAnimating);
+    else if (node.type === 'ctx') drawCtxNode(node, isAnimating);
+    else if (node.type === 'tool') drawToolNode(node, isAnimating);
+  });
+}
+
+function drawArrow(tx, ty, fx, fy, color, lw) {
+  const angle = Math.atan2(ty - fy, tx - fx);
+  const len = 7;
+  ctx2d.beginPath();
+  ctx2d.strokeStyle = color;
+  ctx2d.lineWidth = lw;
+  ctx2d.moveTo(tx - len * Math.cos(angle - 0.4), ty - len * Math.sin(angle - 0.4));
+  ctx2d.lineTo(tx, ty);
+  ctx2d.lineTo(tx - len * Math.cos(angle + 0.4), ty - len * Math.sin(angle + 0.4));
+  ctx2d.stroke();
+}
+
+function drawRoleNode(node, pulse) {
+  const r = 18;
+  const alpha = pulse ? (0.7 + 0.3 * Math.sin(animT * 0.1)) : 1;
+
+  ctx2d.globalAlpha = alpha;
+  ctx2d.beginPath();
+  ctx2d.arc(node.x, node.y, r, 0, Math.PI*2);
+
+  if (node.active) {
+    ctx2d.fillStyle = '#1a56db';
+    ctx2d.fill();
+    ctx2d.strokeStyle = '#1547c0';
+    ctx2d.lineWidth = 2;
+    ctx2d.stroke();
+  } else if (node.ancestor) {
+    ctx2d.fillStyle = '#e8f0fe';
+    ctx2d.fill();
+    ctx2d.strokeStyle = '#bfdbfe';
+    ctx2d.lineWidth = 1.5;
+    ctx2d.stroke();
+  } else {
+    ctx2d.fillStyle = '#fafaf8';
+    ctx2d.fill();
+    ctx2d.strokeStyle = '#d0cdc3';
+    ctx2d.lineWidth = 1;
+    ctx2d.stroke();
+  }
+
+  ctx2d.globalAlpha = 1;
+  ctx2d.fillStyle = node.active ? '#fff' : (node.ancestor ? '#1a56db' : '#a8a49c');
+  ctx2d.font = `${node.active ? 600 : 400} 10px IBM Plex Mono, monospace`;
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+  ctx2d.fillText(String(node.level), node.x, node.y);
+
+  ctx2d.fillStyle = node.active ? '#1a1916' : (node.ancestor ? '#1a56db' : '#a8a49c');
+  ctx2d.font = `${node.active ? '600' : '400'} 11px IBM Plex Sans, sans-serif`;
+  ctx2d.textAlign = 'left';
+  ctx2d.fillText(node.label, node.x + r + 5, node.y);
+}
+
+function drawEngineNode(node, pulse) {
+  const w = 80, h = 44;
+  const x = node.x - w/2, y = node.y - h/2;
+  const alpha = pulse ? (0.7 + 0.3 * Math.sin(animT * 0.1)) : 1;
+  ctx2d.globalAlpha = alpha;
+
+  ctx2d.beginPath();
+  roundRect(ctx2d, x, y, w, h, 8);
+  ctx2d.fillStyle = '#1a1916';
+  ctx2d.fill();
+
+  ctx2d.globalAlpha = 1;
+  ctx2d.fillStyle = '#ffffff';
+  ctx2d.font = '600 11px IBM Plex Mono, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+  const lines = node.label.split('\n');
+  lines.forEach((l, i) => ctx2d.fillText(l, node.x, node.y + (i - (lines.length-1)/2) * 14));
+}
+
+function drawCtxNode(node, pulse) {
+  const w = 80, h = 44;
+  const x = node.x - w/2, y = node.y - h/2;
+  const alpha = pulse ? (0.7 + 0.3 * Math.sin(animT * 0.1)) : 1;
+  ctx2d.globalAlpha = alpha;
+
+  ctx2d.beginPath();
+  roundRect(ctx2d, x, y, w, h, 8);
+  ctx2d.fillStyle = '#fffbeb';
+  ctx2d.fill();
+  ctx2d.strokeStyle = '#fad97a';
+  ctx2d.lineWidth = 1.5;
+  ctx2d.stroke();
+
+  ctx2d.globalAlpha = 1;
+  ctx2d.fillStyle = '#a05c00';
+  ctx2d.font = '600 11px IBM Plex Mono, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+  const lines = node.label.split('\n');
+  lines.forEach((l, i) => ctx2d.fillText(l, node.x, node.y + (i - (lines.length-1)/2) * 14));
+}
+
+function drawToolNode(node, pulse) {
+  const w = 100, h = 22;
+  const x = node.x - w/2, y = node.y - h/2;
+  const alpha = pulse ? (0.7 + 0.3 * Math.sin(animT * 0.1)) : 1;
+  ctx2d.globalAlpha = alpha;
+
+  ctx2d.beginPath();
+  roundRect(ctx2d, x, y, w, h, 4);
+
+  if (node.allowed) {
+    ctx2d.fillStyle = '#e8f7f0';
+    ctx2d.fill();
+    ctx2d.strokeStyle = '#9fe8c3';
+  } else {
+    ctx2d.fillStyle = '#fdf0ee';
+    ctx2d.fill();
+    ctx2d.strokeStyle = '#f5b8b2';
+  }
+  ctx2d.lineWidth = 1;
+  ctx2d.stroke();
+
+  ctx2d.globalAlpha = 1;
+  ctx2d.fillStyle = node.allowed ? '#0f7b44' : '#c0392b';
+  ctx2d.font = '500 10px IBM Plex Mono, monospace';
+  ctx2d.textAlign = 'center';
+  ctx2d.textBaseline = 'middle';
+  // Truncate long names
+  let label = node.label;
+  if (label.length > 14) label = label.slice(0,13)+'…';
+  ctx2d.fillText(label, node.x, node.y);
+}
+
+function roundRect(c, x, y, w, h, r) {
+  c.moveTo(x+r, y);
+  c.lineTo(x+w-r, y); c.arcTo(x+w, y, x+w, y+r, r);
+  c.lineTo(x+w, y+h-r); c.arcTo(x+w, y+h, x+w-r, y+h, r);
+  c.lineTo(x+r, y+h); c.arcTo(x, y+h, x, y+h-r, r);
+  c.lineTo(x, y+r); c.arcTo(x, y, x+r, y, r);
+  c.closePath();
+}
+
+function startAnimation() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  function loop() {
+    animT++;
+    drawGraph();
+    animFrame = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// ─── SIMULATION ──────────────────────────────────────────────────────────────
+let simTimeout = null;
+
+async function runSimulation() {
+  const name  = document.getElementById('f-name').value.trim() || 'Usuário';
+  const role  = document.getElementById('f-role').value;
+  const email = document.getElementById('f-email').value.trim();
+  const dept  = document.getElementById('f-dept').value;
+
+  // Build graph
+  const { nodes, edges } = buildGraphNodes(role, userDenied);
+  graphState = { nodes, edges, activeNodeIdx: -1, phase: 'running' };
+  resizeCanvas();
+  startAnimation();
+
+  document.getElementById('graph-status').textContent = 'processando…';
+  document.getElementById('graph-status').className = 'tag tag-yellow';
+
+  // Show result panels
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('results-wrap').style.display = 'flex';
+  document.getElementById('trace-list').innerHTML = '';
+  document.getElementById('tools-grid').innerHTML = '';
+  document.getElementById('ctx-json').innerHTML = '';
+  document.getElementById('tools-summary').innerHTML = '';
+
+  const btn = document.getElementById('simulate-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Processando…';
+
+  const denyTags = ROLE_DENY_TAGS[role] || [];
+  const traceItems = [];
+
+  // ── Phase 1: Identity
+  await addTrace({ step:'1', type:'info', label:'Identity Registry', desc:`JWT decodificado. E-mail <code>${email}</code> mapeado para user_id interno.`, result:'skip' }, 300);
+  graphState.activeNodeIdx = nodes.findIndex(n => n.id === `role_${role}`);
+
+  // ── Phase 2: Role resolution
+  await addTrace({ step:'2', type:'info', label:`Cargo resolvido: ${role}`, desc:`Access level <code>${ROLES[role].level}</code>. Iniciando percurso da árvore hierárquica.`, result:'skip' }, 400);
+
+  // Ancestry walk
+  let cur = role;
+  const chain = [];
+  while (cur) { chain.unshift(cur); cur = ROLES[cur]?.parent; }
+  for (const r of chain) {
+    const rDenies = ROLE_DENY_TAGS[r] || [];
+    if (rDenies.length) {
+      await addTrace({ step:'↳', type:'warn', label:`role_denials @ ${r}`, desc:`Nega tags: ${rDenies.map(t=>`<code>${t}</code>`).join(', ')}`, result:'skip' }, 200);
+    }
+  }
+
+  graphState.activeNodeIdx = nodes.findIndex(n => n.id === 'policy');
+
+  // ── Phase 3: user_denials
+  if (userDenied.size > 0) {
+    await addTrace({ step:'3', type:'fail', label:'user_denials encontradas', desc:`Exceções individuais: ${[...userDenied].map(t=>`<code>${t}</code>`).join(', ')}`, result:'skip' }, 400);
+  } else {
+    await addTrace({ step:'3', type:'ok', label:'user_denials: nenhuma', desc:'Nenhuma exceção individual cadastrada para este usuário.', result:'skip' }, 300);
+  }
+
+  // ── Phase 4: Tool evaluation
+  await addTrace({ step:'4', type:'info', label:'Avaliando ferramentas…', desc:`${TOOLS.length} ferramentas no pool global. Iniciando filtro por deny_tags + deny_tools.`, result:'skip' }, 400);
+
+  let allowCount = 0, denyCount = 0;
+
+  for (let i = 0; i < TOOLS.length; i++) {
+    const tool = TOOLS[i];
+    const nodeIdx = nodes.findIndex(n => n.id === `tool_${tool.name}`);
+    graphState.activeNodeIdx = nodeIdx;
+
+    const deniedByUser = userDenied.has(tool.name);
+    const deniedByRole = denyTags.includes(tool.tag);
+    const allowed = !deniedByUser && !deniedByRole;
+
+    if (allowed) allowCount++;
+    else denyCount++;
+
+    let reason = '';
+    let type = 'ok';
+    if (deniedByUser) { reason = `user_denial explícito`; type = 'fail'; }
+    else if (deniedByRole) { reason = `role_denial: tag <code>${tool.tag}</code> bloqueada para ${role}`; type = 'fail'; }
+    else reason = `permitida (tag <code>${tool.tag}</code>, padrão: allow)`;
+
+    await addTrace({
+      step: allowed ? '✓' : '✗',
+      type,
+      label: tool.name,
+      desc: reason,
+      result: allowed ? 'allow' : 'deny',
+    }, 80);
+  }
+
+  // ── Phase 5: SecurityContext
+  graphState.activeNodeIdx = nodes.findIndex(n => n.id === 'ctx');
+  await addTrace({ step:'5', type:'ok', label:'SecurityContext gerado', desc:`Objeto serializado e cacheado no Redis com TTL 3600s.`, result:'skip' }, 400);
+
+  graphState.activeNodeIdx = -1;
+  graphState.phase = 'done';
+
+  // ── Finalize graph status
+  document.getElementById('graph-status').textContent = `${allowCount} permitidas · ${denyCount} bloqueadas`;
+  document.getElementById('graph-status').className = 'tag tag-green';
+
+  // Trace summary
+  document.getElementById('trace-summary').textContent = `${allowCount} allow · ${denyCount} deny`;
+  document.getElementById('trace-summary').className = allowCount > denyCount ? 'tag tag-green' : 'tag tag-yellow';
+
+  // ── Render tools grid
+  const toolsGrid = document.getElementById('tools-grid');
+  TOOLS.forEach((tool, i) => {
+    const deniedByUser = userDenied.has(tool.name);
+    const deniedByRole = denyTags.includes(tool.tag);
+    const allowed = !deniedByUser && !deniedByRole;
+    const c = TAG_COLORS[tool.tag];
+    const card = document.createElement('div');
+    card.className = `tool-card ${allowed ? 'allowed' : 'denied'}`;
+    card.style.animationDelay = `${i * 40}ms`;
+    card.innerHTML = `
+      <div class="tool-name">${tool.name}</div>
+      <div class="tool-tag" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${tool.tag}</div>
+      <div class="tool-status">
+        <div class="dot"></div>
+        ${allowed ? 'Injetada' : (deniedByUser ? 'Bloq. exceção' : 'Bloq. cargo')}
+      </div>
+    `;
+    toolsGrid.appendChild(card);
+  });
+
+  // ── Tools summary
+  document.getElementById('tools-summary').innerHTML = `
+    <div class="summary-item">
+      <div class="summary-num" style="color:var(--green)">${allowCount}</div>
+      <div class="summary-label">injetadas no LLM</div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-item">
+      <div class="summary-num" style="color:var(--red)">${denyCount}</div>
+      <div class="summary-label">removidas do contexto</div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-item">
+      <div class="summary-num" style="color:var(--muted)">${TOOLS.length}</div>
+      <div class="summary-label">total no pool</div>
+    </div>
+  `;
+
+  // ── SecurityContext JSON
+  const ctx = {
+    user_id: `usr_${name.toLowerCase().replace(/\s+/g,'_').slice(0,12)}_${Math.floor(Math.random()*900)+100}`,
+    email,
+    role,
+    access_level: ROLES[role].level,
+    google_groups: [`g-${role.toLowerCase().replace('á','a').replace('ã','a').replace('é','e')}s@empresa.com`],
+    deny_tags: denyTags,
+    deny_tools: [...userDenied],
+    allowed_scopes: [dept, 'geral'].filter((v,i,a)=>a.indexOf(v)===i),
+    cache_ttl: 3600,
+    generated_at: new Date().toISOString(),
+  };
+
+  document.getElementById('ctx-json').innerHTML = syntaxHighlight(ctx);
+
+  btn.disabled = false;
+  btn.textContent = '▶ Simular Permissões';
+}
+
+function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+async function addTrace({ step, type, label, desc, result }, ms) {
+  await delay(ms);
+  const list = document.getElementById('trace-list');
+  const item = document.createElement('div');
+  item.className = 'trace-item';
+  const resultHTML = result === 'allow'
+    ? `<span class="trace-result result-allow">PERMITIDA</span>`
+    : result === 'deny'
+    ? `<span class="trace-result result-deny">BLOQUEADA</span>`
+    : '';
+  item.innerHTML = `
+    <div class="trace-step ${type}">${step}</div>
+    <div class="trace-content">
+      <div class="trace-label">${label}</div>
+      <div class="trace-desc">${desc}</div>
+    </div>
+    ${resultHTML}
+  `;
+  list.appendChild(item);
+  item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function syntaxHighlight(obj) {
+  const json = JSON.stringify(obj, null, 2);
+  return json
+    .replace(/("[\w_@.]+"):/g, '<span class="jk">$1</span>:')
+    .replace(/: (".*?")/g, ': <span class="js">$1</span>')
+    .replace(/: (\d+)/g, ': <span class="jn">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="jb">$1</span>')
+    .replace(/\/\/.*/g, '<span class="jc">$&</span>');
+}
+
+// Initial graph render (empty state)
+(function initGraph() {
+  const role = document.getElementById('f-role').value;
+  const { nodes, edges } = buildGraphNodes(role, new Set());
+  graphState = { nodes, edges, activeNodeIdx: -1, phase: 'idle' };
+  resizeCanvas();
+  startAnimation();
+})();
+
+document.getElementById('f-role').addEventListener('change', () => {
+  const role = document.getElementById('f-role').value;
+  const { nodes, edges } = buildGraphNodes(role, userDenied);
+  graphState = { nodes, edges, activeNodeIdx: -1, phase: 'idle' };
+  updatePreview();
+});
+</script>
+</body>
+</html>
