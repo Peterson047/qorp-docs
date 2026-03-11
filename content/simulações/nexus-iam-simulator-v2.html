@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Simulador Comercial</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --panel: #ffffff;
+  --panel2: #fafaf8;
+  --border: #e2e0d8;
+  --border2: #d0cdc3;
+  --text: #1a1916;
+  --muted: #6b6860;
+  --dim: #a8a49c;
+  --accent: #1a56db;
+  --accent-s: #e8f0fe;
+  --green: #0f7b44;
+  --green-s: #e8f7f0;
+  --green-b: #9fe8c3;
+  --red: #c0392b;
+  --red-s: #fdf0ee;
+  --red-b: #f5b8b2;
+  --yellow: #a05c00;
+  --yellow-s: #fef8e7;
+  --yellow-b: #fad97a;
+  --purple: #6d28d9;
+  --purple-s: #f5f3ff;
+  --purple-b: #c4b5fd;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; }
+
+/* ── Layout ── */
+.app { display:grid; grid-template-columns:400px 1fr; grid-template-rows:52px 1fr; min-height:100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  grid-column:1/-1; background:var(--panel); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:14px; padding:0 20px;
+}
+.topbar-logo { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.topbar-sep { flex:1; }
+.badge { font-family:var(--mono); font-size:11px; padding:3px 10px; border-radius:20px; font-weight:500; }
+.badge-yellow { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.badge-blue   { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+
+/* ── Left panel ── */
+.left { background:var(--panel); border-right:1px solid var(--border); overflow-y:auto; display:flex; flex-direction:column; }
+
+.section-head {
+  padding:14px 20px 10px; border-bottom:1px solid var(--border);
+  font-size:11px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.07em;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.section-head span { font-weight:400; color:var(--dim); font-size:10px; text-transform:none; letter-spacing:0; }
+
+.form-block { padding:16px 20px; border-bottom:1px solid var(--border); }
+.field { margin-bottom:12px; }
+.field:last-child { margin-bottom:0; }
+.field label { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+.field input, .field select {
+  width:100%; padding:8px 11px; border:1px solid var(--border2); border-radius:6px;
+  font-family:var(--sans); font-size:13px; color:var(--text); background:var(--panel2);
+  outline:none; transition:border-color .15s, box-shadow .15s;
+}
+.field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,86,219,.08); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* ── Deny grid ── */
+.deny-section-label {
+  font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase;
+  letter-spacing:.06em; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;
+}
+.deny-grid { display:flex; flex-direction:column; gap:5px; }
+.deny-row {
+  display:flex; align-items:center; gap:8px; padding:8px 11px;
+  background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+  cursor:pointer; transition:all .15s; user-select:none;
+}
+.deny-row:hover { border-color:var(--border2); background:#f0ede6; }
+.deny-row.active { background:var(--red-s); border-color:var(--red-b); }
+.deny-row.active .deny-name { color:var(--red); }
+.deny-name { font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:500; flex:1; }
+.deny-tag { font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:3px; flex-shrink:0; }
+.deny-toggle {
+  width:32px; height:18px; border-radius:9px; background:var(--border2);
+  position:relative; transition:background .2s; flex-shrink:0;
+}
+.deny-toggle::after {
+  content:''; position:absolute; width:12px; height:12px; border-radius:50%;
+  background:#fff; top:3px; left:3px; transition:transform .2s; box-shadow:0 1px 2px rgba(0,0,0,.2);
+}
+.deny-row.active .deny-toggle { background:var(--red); }
+.deny-row.active .deny-toggle::after { transform:translateX(14px); }
+
+.role-deny-row {
+  display:flex; align-items:center; gap:6px; padding:6px 10px;
+  background:var(--red-s); border:1px solid var(--red-b); border-radius:5px;
+  font-family:var(--mono); font-size:11px; color:var(--red); cursor:default;
+}
+.role-deny-row.none { background:var(--green-s); border-color:var(--green-b); color:var(--green); }
+
+/* ── Simulate btn ── */
+.sim-btn {
+  margin:16px 20px; width:calc(100% - 40px); padding:11px;
+  background:var(--accent); color:#fff; border:none; border-radius:var(--radius);
+  font-family:var(--sans); font-size:13px; font-weight:600; cursor:pointer;
+  transition:background .15s, transform .1s; letter-spacing:.01em;
+}
+.sim-btn:hover { background:#1547c0; }
+.sim-btn:active { transform:scale(.98); }
+.sim-btn:disabled { background:var(--border2); cursor:not-allowed; transform:none; }
+
+/* ── User preview ── */
+.user-preview {
+  margin:0 20px 16px; padding:12px 14px;
+  background:var(--panel2); border:1px solid var(--border); border-radius:var(--radius);
+}
+.up-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.up-avatar { width:32px; height:32px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+.up-name  { font-size:13px; font-weight:600; }
+.up-email { font-size:11px; color:var(--dim); font-family:var(--mono); }
+.up-meta  { display:flex; gap:5px; flex-wrap:wrap; }
+
+/* ── Right panel ── */
+.right { overflow-y:auto; display:flex; flex-direction:column; }
+
+/* ── Tab bar ── */
+.tab-bar {
+  background:var(--panel); border-bottom:1px solid var(--border);
+  display:flex; align-items:stretch; padding:0 20px; gap:2px; flex-shrink:0;
+}
+.tab-btn {
+  padding:13px 16px 11px; font-size:12px; font-weight:600; color:var(--dim);
+  border:none; background:none; cursor:pointer; border-bottom:2px solid transparent;
+  font-family:var(--sans); letter-spacing:.01em; transition:color .15s;
+  white-space:nowrap;
+}
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ── Tab views ── */
+.tab-view { display:none; padding:20px; flex-direction:column; gap:16px; flex:1; }
+.tab-view.active { display:flex; }
+
+/* ── Canvas (BUG FIX) ── */
+.graph-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.graph-head { padding:13px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.graph-title { font-size:13px; font-weight:600; color:var(--text); }
+.graph-sub   { font-size:11px; color:var(--dim); font-family:var(--mono); margin-top:1px; }
+/* Key fix: no width:100% on canvas itself — control via wrapper */
+.canvas-wrap { position:relative; width:100%; line-height:0; background:var(--panel2); }
+canvas { display:block; }
+
+/* ── Trace ── */
+.trace-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.trace-item { display:flex; gap:10px; padding:10px 20px; border-bottom:1px solid var(--border); align-items:flex-start; animation:fadeIn .2s ease both; }
+.trace-item:last-child { border-bottom:none; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.trace-step { width:22px; height:22px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:700; font-family:var(--mono); margin-top:1px; }
+.step-ok   { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.step-fail { background:var(--red-s);   color:var(--red);   border:1px solid var(--red-b); }
+.step-info { background:var(--accent-s);color:var(--accent);border:1px solid #bfdbfe; }
+.step-warn { background:var(--yellow-s);color:var(--yellow);border:1px solid var(--yellow-b); }
+.trace-body { flex:1; }
+.trace-label { font-size:12px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.trace-desc  { font-size:12px; color:var(--muted); line-height:1.5; }
+.trace-desc code { font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--border); padding:1px 5px; border-radius:3px; color:var(--text); }
+.trace-badge { font-family:var(--mono); font-size:10px; font-weight:700; padding:1px 7px; border-radius:3px; align-self:center; flex-shrink:0; }
+.tb-allow { background:var(--green-s); color:var(--green); border:1px solid var(--green-b); }
+.tb-deny  { background:var(--red-s);   color:var(--red);   border:1px solid var(--red-b); }
+
+/* ── Tools result ── */
+.tools-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.tools-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:0; }
+.tool-card { padding:12px 15px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); transition:background .12s; animation:fadeIn .2s ease both; }
+.tool-card:hover { background:var(--panel2); }
+.tool-card-name { font-family:var(--mono); font-size:11px; font-weight:500; margin-bottom:4px; }
+.tool-card-tag  { font-family:var(--mono); font-size:10px; padding:1px 6px; border-radius:3px; display:inline-block; margin-bottom:6px; }
+.tool-card-status { font-size:11px; font-weight:600; display:flex; align-items:center; gap:4px; }
+.dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.tool-card.t-allowed .tool-card-name   { color:var(--green); }
+.tool-card.t-allowed .dot              { background:var(--green); }
+.tool-card.t-allowed .tool-card-status { color:var(--green); }
+.tool-card.t-denied  .tool-card-name   { color:var(--red); }
+.tool-card.t-denied  .dot              { background:var(--red); }
+.tool-card.t-denied  .tool-card-status { color:var(--red); }
+
+/* ── Summary bar ── */
+.summary-bar { display:flex; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+.sum-item { display:flex; align-items:center; gap:8px; padding:12px 18px; border-right:1px solid var(--border); }
+.sum-item:last-child { border-right:none; }
+.sum-num   { font-family:var(--mono); font-size:20px; font-weight:600; }
+.sum-label { font-size:11px; color:var(--dim); line-height:1.4; }
+
+/* ── JWT ── */
+.jwt-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.jwt-body { padding:16px 20px; font-family:var(--mono); font-size:12px; line-height:1.8; background:var(--panel2); overflow-x:auto; white-space:pre; }
+.jk { color:var(--accent); }
+.js { color:var(--green); }
+.jn { color:var(--yellow); }
+.jb { color:var(--purple); }
+
+/* ── Tags ── */
+.tag { display:inline-flex; align-items:center; font-family:var(--mono); font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.tag-green  { background:var(--green-s);  color:var(--green);  border:1px solid var(--green-b); }
+.tag-red    { background:var(--red-s);    color:var(--red);    border:1px solid var(--red-b); }
+.tag-yellow { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.tag-blue   { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.tag-gray   { background:var(--panel2);   color:var(--dim);    border:1px solid var(--border); }
+.tag-purple { background:var(--purple-s); color:var(--purple); border:1px solid var(--purple-b); }
+
+/* ── Empty ── */
+.empty { padding:48px 20px; text-align:center; color:var(--dim); font-size:13px; line-height:1.7; }
+.empty .icon { font-size:30px; margin-bottom:12px; opacity:.4; }
+
+/* ═══════════════════════════════════════════
+   ARCHITECTURE TABS
+═══════════════════════════════════════════ */
+
+.arch-card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.arch-head { padding:14px 20px; border-bottom:1px solid var(--border); }
+.arch-head-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.arch-head-sub   { font-size:11px; color:var(--dim); font-family:var(--mono); }
+
+/* Phase grid */
+.phase-grid { display:grid; grid-template-columns:repeat(3,1fr); }
+.phase-col { padding:20px; border-right:1px solid var(--border); }
+.phase-col:last-child { border-right:none; }
+.phase-col.current { background:#f0f5ff; }
+.phase-eyebrow { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin-bottom:8px; font-family:var(--mono); }
+.phase-col.current .phase-eyebrow { color:var(--accent); }
+.phase-title { font-size:14px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.phase-desc  { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:14px; }
+.now-pill {
+  display:inline-flex; align-items:center; gap:4px;
+  background:var(--accent); color:#fff;
+  font-size:10px; font-weight:700; font-family:var(--mono);
+  padding:2px 9px; border-radius:20px; margin-bottom:10px;
+}
+.info-box {
+  background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+  padding:10px 12px; margin-bottom:8px;
+}
+.info-box:last-child { margin-bottom:0; }
+.info-box-title { font-size:12px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.info-box-body  { font-size:11px; color:var(--muted); font-family:var(--mono); line-height:1.6; }
+.trigger-box {
+  background:var(--yellow-s); border:1px solid var(--yellow-b); border-radius:6px;
+  padding:10px 12px;
+}
+.trigger-box .info-box-title { color:var(--yellow); }
+.trigger-box .info-box-body  { color:var(--yellow); opacity:.85; }
+
+/* Flow steps */
+.flow-list { display:flex; flex-direction:column; }
+.flow-item { display:flex; gap:16px; padding:16px 20px; border-bottom:1px solid var(--border); align-items:flex-start; }
+.flow-item:last-child { border-bottom:none; }
+.flow-num {
+  width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; font-family:var(--mono); flex-shrink:0; margin-top:1px;
+}
+.flow-body { flex:1; }
+.flow-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:3px; }
+.flow-desc  { font-size:12px; color:var(--muted); line-height:1.6; }
+.flow-desc code { font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--border); padding:1px 5px; border-radius:3px; }
+.code-block {
+  margin-top:8px; padding:10px 12px;
+  background:var(--panel2); border:1px solid var(--border);
+  border-left:3px solid var(--accent); border-radius:0 5px 5px 0;
+  font-family:var(--mono); font-size:11px; color:var(--muted); line-height:1.7;
+}
+.code-block-label { font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin-bottom:4px; }
+
+/* Scale table */
+.scale-grid { display:grid; grid-template-columns:1fr 1fr; }
+.scale-col { padding:20px; }
+.scale-col:first-child { border-right:1px solid var(--border); }
+.scale-col-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); margin-bottom:12px; font-family:var(--mono); }
+.scale-step { display:flex; flex-direction:column; gap:6px; }
+.yes-chip {
+  display:flex; align-items:center; gap:8px; padding:8px 12px;
+  background:var(--green-s); border:1px solid var(--green-b); border-radius:6px;
+  font-size:12px; color:var(--green); font-family:var(--mono);
+}
+
+/* Roadmap */
+.roadmap-list { display:flex; flex-direction:column; }
+.roadmap-item { display:flex; gap:16px; padding:18px 20px; border-bottom:1px solid var(--border); align-items:flex-start; }
+.roadmap-item:last-child { border-bottom:none; }
+.rm-line { display:flex; flex-direction:column; align-items:center; gap:0; flex-shrink:0; }
+.rm-dot {
+  width:12px; height:12px; border-radius:50%;
+  border:2px solid var(--border2); background:var(--panel2); flex-shrink:0;
+}
+.rm-dot.active { background:var(--accent); border-color:var(--accent); }
+.rm-dot.done   { background:var(--green);  border-color:var(--green); }
+.rm-vline { width:1px; flex:1; background:var(--border); min-height:16px; margin-top:3px; }
+.rm-body { flex:1; padding-bottom:4px; }
+.rm-eyebrow { font-size:10px; font-weight:700; font-family:var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px; }
+.rm-title { font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px; }
+.rm-desc  { font-size:12px; color:var(--muted); line-height:1.6; }
+.rm-tags  { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+
+/* Principles */
+.principles-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:0; }
+.principle { padding:20px; border-right:1px solid var(--border); }
+.principle:last-child { border-right:none; }
+.principle-line { width:32px; height:3px; border-radius:2px; margin-bottom:12px; }
+.principle-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:6px; }
+.principle-desc  { font-size:12px; color:var(--muted); line-height:1.6; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo"><div class="logo-dot"></div>Nexus IAM</div>
+    <span style="font-size:12px;color:var(--dim);font-family:var(--mono)">/ simulador comercial</span>
+    <div class="topbar-sep"></div>
+    <span class="badge badge-yellow">● Fase 1 · Setor Comercial</span>
+    <span class="badge badge-blue" style="margin-left:4px">v1.1</span>
+  </header>
+
+  <!-- ── Left: Config ── -->
+  <aside class="left">
+
+    <div class="section-head">Usuário <span>identidade</span></div>
+    <div class="form-block">
+      <div class="field-row">
+        <div class="field">
+          <label>Nome</label>
+          <input id="f-name" type="text" value="Carlos Mendes" oninput="updatePreview()">
+        </div>
+        <div class="field">
+          <label>Cargo</label>
+          <select id="f-role" onchange="onRoleChange()">
+            <option value="Diretor">Diretor</option>
+            <option value="Gerente Comercial">Gerente Comercial</option>
+            <option value="Vendedor/SDR" selected>Vendedor/SDR</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>E-mail</label>
+        <input id="f-email" type="email" value="carlos.mendes@empresa.com" oninput="updatePreview()">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Canal</label>
+          <select id="f-channel" onchange="updatePreview()">
+            <option value="web">Web (Metas)</option>
+            <option value="whatsapp">WhatsApp</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Departamento</label>
+          <select id="f-dept">
+            <option value="comercial">Comercial</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-head">Restrições do Cargo <span>role_denials · herdadas</span></div>
+    <div class="form-block">
+      <div id="role-denials-display" style="display:flex;flex-direction:column;gap:5px;"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:var(--mono)">
+        Herdadas da hierarquia. Bloqueiam tools de outros setores futuros.
+      </div>
+    </div>
+
+    <div class="section-head">Exceções Individuais <span>user_denials</span></div>
+    <div class="form-block">
+      <div class="deny-section-label">
+        <span>Tools do Agente Comercial</span>
+        <span id="deny-count-label" style="font-weight:400"></span>
+      </div>
+      <div class="deny-grid" id="deny-grid"></div>
+    </div>
+
+    <div class="section-head">Acesso a Agentes <span>available_agents</span></div>
+    <div class="form-block">
+      <div class="deny-section-label"><span>Agentes do sistema</span></div>
+      <div class="deny-grid" id="agent-grid"></div>
+      <div style="margin-top:8px;font-size:11px;color:var(--dim);font-family:var(--mono)">
+        Desativar bloqueia o agente inteiro — tools não chegam a ser avaliadas.
+      </div>
+    </div>
+
+    <div class="user-preview">
+      <div class="up-row">
+        <div class="up-avatar" id="prev-avatar">C</div>
+        <div>
+          <div class="up-name" id="prev-name">Carlos Mendes</div>
+          <div class="up-email" id="prev-email">carlos.mendes@empresa.com</div>
+        </div>
+      </div>
+      <div class="up-meta" id="prev-meta"></div>
+    </div>
+
+    <button class="sim-btn" id="sim-btn" onclick="runSim()">▶ Simular Permissões</button>
+
+  </aside>
+
+  <!-- ── Right ── -->
+  <div class="right">
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('sim',this)">Simulador IAM</button>
+      <button class="tab-btn" onclick="switchTab('arch',this)">Arquitetura</button>
+      <button class="tab-btn" onclick="switchTab('roadmap',this)">Roadmap</button>
+    </div>
+
+    <!-- ═══ SIMULADOR ═══ -->
+    <div class="tab-view active" id="tab-sim">
+
+      <div class="graph-card">
+        <div class="graph-head">
+          <div>
+            <div class="graph-title">Grafo de Permissões — Setor Comercial</div>
+            <div class="graph-sub">Cargo → PolicyEngine → Agente Comercial → Tools</div>
+          </div>
+          <span class="tag tag-gray" id="graph-status">aguardando</span>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <canvas id="gc"></canvas>
+        </div>
+      </div>
+
+      <div class="empty" id="empty">
+        <div class="icon">⬡</div>
+        Configure o usuário e clique em <strong>Simular Permissões</strong><br>para ver o grafo e o trace em tempo real.
+      </div>
+
+      <div id="results" style="display:none;flex-direction:column;gap:16px;">
+
+        <div class="trace-card">
+          <div class="graph-head">
+            <div>
+              <div class="graph-title">Policy Engine — Trace</div>
+              <div class="graph-sub">decisões em sequência</div>
+            </div>
+            <span class="tag tag-gray" id="trace-tag"></span>
+          </div>
+          <div id="trace-list"></div>
+        </div>
+
+        <div class="tools-card">
+          <div class="graph-head">
+            <div>
+              <div class="graph-title">Tools Injetadas no Agente Comercial</div>
+              <div class="graph-sub">bind_tools() após filtro IAM</div>
+            </div>
+          </div>
+          <div class="summary-bar" id="tools-summary"></div>
+          <div class="tools-grid" id="tools-grid"></div>
+        </div>
+
+        <div class="jwt-card">
+          <div class="graph-head">
+            <div>
+              <div class="graph-title">JWT Nexus Gerado</div>
+              <div class="graph-sub">token emitido após auth · circula em todas as requisições</div>
+            </div>
+            <span class="tag tag-gray">RS256</span>
+          </div>
+          <div class="jwt-body" id="jwt-body"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══ ARQUITETURA ═══ -->
+    <div class="tab-view" id="tab-arch">
+
+      <!-- Modelo adotado -->
+      <div class="arch-card">
+        <div class="arch-head">
+          <div class="arch-head-title">Modelo de Agente Adotado</div>
+          <div class="arch-head-sub">decisão arquitetural atual e caminho de evolução</div>
+        </div>
+        <div class="phase-grid">
+
+          <div class="phase-col current">
+            <div class="now-pill">▶ AGORA</div>
+            <div class="phase-eyebrow">Modelo B · Embutido</div>
+            <div class="phase-title">Core Único + Config</div>
+            <div class="phase-desc">Um grafo LangGraph com system prompt dinâmico por setor. O IAM resolve o isolamento via filtro de tools — sem múltiplos serviços.</div>
+            <div class="info-box">
+              <div class="info-box-title">O que muda por setor</div>
+              <div class="info-box-body">system_prompt<br>tools injetadas (IAM)<br>knowledge_base scope<br>output_mode por canal</div>
+            </div>
+            <div class="info-box">
+              <div class="info-box-title">O que não muda</div>
+              <div class="info-box-body">grafo LangGraph<br>nó call_agent<br>memória / checkpoints<br>MCP client</div>
+            </div>
+          </div>
+
+          <div class="phase-col">
+            <div class="phase-eyebrow">Modelo B+ · Subgrafos</div>
+            <div class="phase-title">Agentes como Subgrafos</div>
+            <div class="phase-desc">Quando setores tiverem lógicas de orquestração distintas, o agente vira um subgrafo dentro do core — sem nova infra, sem latência de rede.</div>
+            <div class="trigger-box">
+              <div class="info-box-title">Gatilho</div>
+              <div class="info-box-body">Fluxo diferente por setor: human-in-the-loop, pipelines assíncronos, retry policies específicas</div>
+            </div>
+          </div>
+
+          <div class="phase-col">
+            <div class="phase-eyebrow">Modelo C · Híbrido</div>
+            <div class="phase-title">Serviços Externos via MCP</div>
+            <div class="phase-desc">Agentes críticos viram serviços independentes chamados via MCP ou rota HTTP — escala e deployment separados do core.</div>
+            <div class="trigger-box">
+              <div class="info-box-title">Gatilho</div>
+              <div class="info-box-body">Times distintos por agente, SLAs diferentes, necessidade de isolamento de falhas ou escala independente</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Fluxo de uma mensagem -->
+      <div class="arch-card">
+        <div class="arch-head">
+          <div class="arch-head-title">Fluxo de uma Mensagem no Core</div>
+          <div class="arch-head-sub">do canal até a resposta · Fase 1</div>
+        </div>
+        <div class="flow-list">
+
+          <div class="flow-item">
+            <div class="flow-num">1</div>
+            <div class="flow-body">
+              <div class="flow-title">Entrada pelo Canal</div>
+              <div class="flow-desc">A mensagem chega pelo canal (WhatsApp via n8n, Web via API). O gateway valida o Bearer Token e identifica <code>user_id</code> + <code>channel</code>.</div>
+              <div class="code-block">
+                <div class="code-block-label">Payload</div>
+                { user_id: "usr_carlos_001", message: "gera proposta pro cliente X", channel: "whatsapp" }
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-num">2</div>
+            <div class="flow-body">
+              <div class="flow-title">IAM resolve o SecurityContext</div>
+              <div class="flow-desc">PolicyEngine consulta cargo + hierarquia (Redis TTL 1h). Gera <code>available_agents</code>, <code>deny_tags</code>, <code>deny_tools</code> e <code>output_mode</code> pelo canal.</div>
+              <div class="code-block">
+                <div class="code-block-label">SecurityContext gerado</div>
+                { role: "Vendedor/SDR", available_agents: ["agente_comercial"],<br>  deny_tags: ["admin","payments","financial"], output_mode: "condensed" }
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-num">3</div>
+            <div class="flow-body">
+              <div class="flow-title">Core monta o contexto do agente</div>
+              <div class="flow-desc">O nó <code>call_agent</code> carrega o <code>system_prompt</code> do setor, recupera memória do usuário, e executa <code>bind_tools()</code> com apenas as tools permitidas pelo IAM.</div>
+              <div class="code-block">
+                <div class="code-block-label">O que o LLM enxerga</div>
+                system_prompt: "Você é assistente do setor comercial..."<br>
+                tools: [mcp_query, generate_proposal, knowledge_base_search,<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;web_search, get_address_from_cep]<br>
+                memory: últimas interações do Carlos
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-num">4</div>
+            <div class="flow-body">
+              <div class="flow-title">Resposta formatada por canal</div>
+              <div class="flow-desc">O <code>output_mode</code> formata a resposta pelo canal. WhatsApp recebe texto condensado sem markdown; Web recebe resposta completa.</div>
+              <div class="code-block">
+                <div class="code-block-label">Output por canal</div>
+                Web:      "## Proposta para Cliente X\n\n**Produto:** ..."<br>
+                WhatsApp: "Proposta pra X: Produto Y, R$ 1.200/mês. Envio PDF?"
+              </div>
+            </div>
+          </div>
+
+          <div class="flow-item">
+            <div class="flow-num">5</div>
+            <div class="flow-body">
+              <div class="flow-title">Memória + Auditoria</div>
+              <div class="flow-desc"><code>consolidate_memory</code> extrai fatos relevantes e salva na memória de longo prazo. <code>audit_log</code> registra tools usadas, tokens, latência e o SecurityContext ativo.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- O que muda ao escalar -->
+      <div class="arch-card">
+        <div class="arch-head">
+          <div class="arch-head-title">Adicionando um Novo Setor</div>
+          <div class="arch-head-sub">sem reescrever o core · só configuração</div>
+        </div>
+        <div class="scale-grid">
+          <div class="scale-col">
+            <div class="scale-col-title">Ex: adicionar RH — 4 passos</div>
+            <div class="scale-step">
+              <div class="info-box">
+                <div class="info-box-title">1 · IAM — novo scope</div>
+                <div class="info-box-body">Cadastra scope "rh" e mapeia grupos Google do RH no Identity Registry</div>
+              </div>
+              <div class="info-box">
+                <div class="info-box-title">2 · Tools — novas tags</div>
+                <div class="info-box-body">Cria tools do RH com tag "rh", sensitivity "restricted"</div>
+              </div>
+              <div class="info-box">
+                <div class="info-box-title">3 · Knowledge — novo scope</div>
+                <div class="info-box-body">Ingere documentos com metadata.scope = "rh" na vector store</div>
+              </div>
+              <div class="info-box">
+                <div class="info-box-title">4 · Prompt — novo template</div>
+                <div class="info-box-body">Adiciona system_prompts["rh"] no config. Pronto.</div>
+              </div>
+            </div>
+          </div>
+          <div class="scale-col">
+            <div class="scale-col-title">O que NÃO muda</div>
+            <div class="scale-step">
+              <div class="yes-chip">✓ Grafo LangGraph (nexus.py)</div>
+              <div class="yes-chip">✓ Nó call_agent</div>
+              <div class="yes-chip">✓ Policy Engine + filtro IAM</div>
+              <div class="yes-chip">✓ Memória (Redis + Postgres)</div>
+              <div class="yes-chip">✓ MCP client (BigQuery)</div>
+              <div class="yes-chip">✓ Audit log</div>
+              <div class="yes-chip">✓ Canais (WhatsApp, Web)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ ROADMAP ═══ -->
+    <div class="tab-view" id="tab-roadmap">
+
+      <div class="arch-card">
+        <div class="arch-head">
+          <div class="arch-head-title">Roadmap de Expansão</div>
+          <div class="arch-head-sub">Comercial → Empresa completa · escala sem reescrita</div>
+        </div>
+        <div class="roadmap-list">
+
+          <div class="roadmap-item">
+            <div class="rm-line"><div class="rm-dot done"></div><div class="rm-vline"></div></div>
+            <div class="rm-body">
+              <div class="rm-eyebrow">Fase 0 · Concluída</div>
+              <div class="rm-title">Core Nexus + Infraestrutura</div>
+              <div class="rm-desc">LangGraph compilado, MCP BigQuery, memória Postgres/Redis, API FastAPI, canais WhatsApp + Web, auditoria base.</div>
+              <div class="rm-tags">
+                <span class="tag tag-green">LangGraph</span>
+                <span class="tag tag-green">MCP</span>
+                <span class="tag tag-green">Postgres</span>
+                <span class="tag tag-green">FastAPI</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="roadmap-item">
+            <div class="rm-line"><div class="rm-dot active"></div><div class="rm-vline"></div></div>
+            <div class="rm-body">
+              <div class="rm-eyebrow">Fase 1 · Em andamento</div>
+              <div class="rm-title">Setor Comercial + IAM Base</div>
+              <div class="rm-desc">Agente comercial ativo (ERP via MCP, proposta, knowledge base). IAM hierárquico Diretor → Gerente → Vendedor/SDR. Tools filtradas por cargo e exceções individuais. JWT com available_agents.</div>
+              <div class="rm-tags">
+                <span class="tag tag-blue">IAM hierárquico</span>
+                <span class="tag tag-blue">Agente Comercial</span>
+                <span class="tag tag-blue">JWT dinâmico</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="roadmap-item">
+            <div class="rm-line"><div class="rm-dot"></div><div class="rm-vline"></div></div>
+            <div class="rm-body">
+              <div class="rm-eyebrow">Fase 2 · Próximo</div>
+              <div class="rm-title">Expansão para RH e Operações</div>
+              <div class="rm-desc">Mesmo core, novos scopes no IAM. Agente RH (folha, férias, onboarding). Agente Operações (logística, estoque). Knowledge base segmentada por setor via metadata. Zero nova infraestrutura.</div>
+              <div class="rm-tags">
+                <span class="tag tag-gray">Agente RH</span>
+                <span class="tag tag-gray">Agente Operações</span>
+                <span class="tag tag-gray">KB multi-scope</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="roadmap-item">
+            <div class="rm-line"><div class="rm-dot"></div><div class="rm-vline"></div></div>
+            <div class="rm-body">
+              <div class="rm-eyebrow">Fase 3 · Médio prazo</div>
+              <div class="rm-title">Financeiro com Human-in-the-Loop</div>
+              <div class="rm-desc">Agente Financeiro vira subgrafo com nó de aprovação humana. Fluxo: LLM sugere ação → aguarda aprovação do Diretor → executa. Primeiro caso de lógica de orquestração diferente do comercial.</div>
+              <div class="rm-tags">
+                <span class="tag tag-gray">Subgrafo</span>
+                <span class="tag tag-gray">Human-in-the-loop</span>
+                <span class="tag tag-gray">Notificações</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="roadmap-item">
+            <div class="rm-line"><div class="rm-dot"></div></div>
+            <div class="rm-body">
+              <div class="rm-eyebrow">Fase 4 · Longo prazo</div>
+              <div class="rm-title">Google Workspace IAM + Agentes Externos via MCP</div>
+              <div class="rm-desc">Sincronização automática com Google Identity Platform. Agentes críticos (infra, admin) viram serviços externos chamados via MCP — isolamento de falhas e escala independente por domínio.</div>
+              <div class="rm-tags">
+                <span class="tag tag-gray">Google OIDC</span>
+                <span class="tag tag-gray">MCP Agent-as-Service</span>
+                <span class="tag tag-gray">Multi-tenant</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Princípios -->
+      <div class="arch-card">
+        <div class="arch-head">
+          <div class="arch-head-title">Princípios de Design</div>
+          <div class="arch-head-sub">as regras que guiam cada decisão arquitetural</div>
+        </div>
+        <div class="principles-grid">
+          <div class="principle">
+            <div class="principle-line" style="background:var(--accent)"></div>
+            <div class="principle-title">Config, não código</div>
+            <div class="principle-desc">Novo setor = novo IAM scope + system_prompt + KB scope. O grafo LangGraph não muda. A lógica de orquestração é reutilizada.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-line" style="background:var(--green)"></div>
+            <div class="principle-title">Separar quando necessário</div>
+            <div class="principle-desc">Agente vira subgrafo quando tem fluxo diferente. Vira serviço externo quando precisa escalar ou isolar falhas. Não antes.</div>
+          </div>
+          <div class="principle">
+            <div class="principle-line" style="background:var(--yellow)"></div>
+            <div class="principle-title">IAM como fundação</div>
+            <div class="principle-desc">O filtro de tools resolve o isolamento entre setores. A separação física de agentes é otimização operacional — não pré-requisito de segurança.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+
+const ROLES = {
+  'Diretor':           { level:80,  parent:'CEO',              globalDenyTags:['admin'] },
+  'Gerente Comercial': { level:60,  parent:'Diretor',          globalDenyTags:['admin','payments'] },
+  'Vendedor/SDR':      { level:40,  parent:'Gerente Comercial',globalDenyTags:['admin','payments','financial'] },
+};
+
+const TOOLS = [
+  { name:'mcp_query',             tag:'internal', desc:'Consulta ERP via MCP' },
+  { name:'generate_proposal',     tag:'internal', desc:'Proposta no chat' },
+  { name:'knowledge_base_search', tag:'internal', desc:'Vector store interno' },
+  { name:'web_search',            tag:'public',   desc:'Pesquisa web/mídia' },
+  { name:'get_address_from_cep',  tag:'public',   desc:'Validação de CEP' },
+];
+
+const AGENTS = [
+  { name:'agente_comercial',  sector:'Comercial',  defaultOn:true  },
+  { name:'agente_rh',         sector:'RH',         defaultOn:false },
+  { name:'agente_financeiro', sector:'Financeiro', defaultOn:false },
+];
+
+const TAG_COLORS = {
+  internal:{ bg:'#e8f0fe', text:'#1a56db', border:'#bfdbfe' },
+  public:  { bg:'#e8f7f0', text:'#0f7b44', border:'#9fe8c3' },
+};
+
+const userDenied  = new Set();
+const agentDenied = new Set();
+
+// ═══════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-view').forEach(v => {
+    v.classList.toggle('active', v.id === 'tab-' + id);
+  });
+  if (id === 'sim') {
+    // Re-init canvas after tab becomes visible
+    requestAnimationFrame(() => initCanvas());
+  }
+}
+
+// ═══════════════════════════════════════════
+// GRIDS
+// ═══════════════════════════════════════════
+
+function buildDenyGrid() {
+  const g = document.getElementById('deny-grid');
+  g.innerHTML = '';
+  TOOLS.forEach(t => {
+    const c = TAG_COLORS[t.tag];
+    const row = document.createElement('div');
+    row.className = 'deny-row' + (userDenied.has(t.name) ? ' active' : '');
+    row.id = `ud-${t.name}`;
+    row.innerHTML = `
+      <span class="deny-name">${t.name}</span>
+      <span class="deny-tag" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${t.tag}</span>
+      <div class="deny-toggle"></div>`;
+    row.onclick = () => {
+      userDenied.has(t.name) ? userDenied.delete(t.name) : userDenied.add(t.name);
+      row.classList.toggle('active');
+      updateDenyCount(); updatePreview();
+    };
+    g.appendChild(row);
+  });
+}
+
+function buildAgentGrid() {
+  const g = document.getElementById('agent-grid');
+  g.innerHTML = '';
+  AGENTS.forEach(a => {
+    if (!a.defaultOn) agentDenied.add(a.name);
+    const blocked = agentDenied.has(a.name);
+    const row = document.createElement('div');
+    row.className = 'deny-row' + (blocked ? ' active' : '');
+    row.id = `ag-${a.name}`;
+    row.innerHTML = `
+      <span class="deny-name">${a.name}</span>
+      <span class="deny-tag" style="background:var(--panel2);color:var(--dim);border:1px solid var(--border)">${a.sector}</span>
+      <div class="deny-toggle"></div>`;
+    row.onclick = () => {
+      agentDenied.has(a.name) ? agentDenied.delete(a.name) : agentDenied.add(a.name);
+      row.classList.toggle('active');
+      updatePreview(); rebuildGraph();
+    };
+    g.appendChild(row);
+  });
+}
+
+function updateDenyCount() {
+  const el = document.getElementById('deny-count-label');
+  el.textContent = userDenied.size > 0 ? `${userDenied.size} exceção(ões)` : '';
+  el.style.color = userDenied.size > 0 ? 'var(--red)' : '';
+}
+
+function onRoleChange() { updateRoleDenyDisplay(); updatePreview(); rebuildGraph(); }
+
+function updateRoleDenyDisplay() {
+  const role = document.getElementById('f-role').value;
+  const tags = ROLES[role]?.globalDenyTags || [];
+  const el = document.getElementById('role-denials-display');
+  el.innerHTML = '';
+  if (!tags.length) {
+    el.innerHTML = `<div class="role-deny-row none">✓ Nenhuma restrição global aplicada</div>`;
+  } else {
+    tags.forEach(t => {
+      const d = document.createElement('div');
+      d.className = 'role-deny-row';
+      d.innerHTML = `<span>✗</span> tag <strong>${t}</strong> — bloqueada neste cargo`;
+      el.appendChild(d);
+    });
+  }
+}
+
+function updatePreview() {
+  const name  = document.getElementById('f-name').value.trim() || 'Usuário';
+  const role  = document.getElementById('f-role').value;
+  const email = document.getElementById('f-email').value.trim();
+  const ch    = document.getElementById('f-channel').value;
+  document.getElementById('prev-avatar').textContent = name[0]?.toUpperCase() || 'U';
+  document.getElementById('prev-name').textContent   = name;
+  document.getElementById('prev-email').textContent  = email;
+  const lvl = ROLES[role]?.level || 0;
+  const availAgents = AGENTS.filter(a => !agentDenied.has(a.name)).map(a => a.name);
+  document.getElementById('prev-meta').innerHTML = `
+    <span class="tag tag-yellow">${role}</span>
+    <span class="tag tag-gray">lvl ${lvl}</span>
+    <span class="tag ${ch==='web'?'tag-blue':'tag-green'}">${ch}</span>
+    ${userDenied.size ? `<span class="tag tag-red">${userDenied.size} exceção(ões)</span>` : ''}
+    <span class="tag tag-gray">${availAgents.length} agente(s)</span>`;
+}
+
+// ═══════════════════════════════════════════
+// CANVAS — fixed DPR scaling
+// ═══════════════════════════════════════════
+
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+let animT = 0, animId = null;
+let GS = { nodes:[], edges:[], activeIdx:-1 };
+let CW = 0;   // logical width
+const CH = 300;
+
+function initCanvas() {
+  const wrap = document.getElementById('canvas-wrap');
+  const W = wrap.offsetWidth;
+  if (!W) return;
+  CW = W;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = W   * dpr;
+  canvas.height = CH  * dpr;
+  canvas.style.width  = W   + 'px';
+  canvas.style.height = CH  + 'px';
+  // Use setTransform to avoid accumulation on repeated calls
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  rebuildGraph();
+}
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('tab-sim').classList.contains('active')) initCanvas();
+});
+
+function rebuildGraph() {
+  const role = document.getElementById('f-role').value;
+  const { nodes, edges } = buildGraph(role, userDenied, agentDenied);
+  GS = { nodes, edges, activeIdx:-1 };
+  if (!animId) startAnim(); else drawGraph();
+}
+
+function buildGraph(role, uDenied, aDenied) {
+  const W = CW || 600;
+  const H = CH;
+  const nodes = [], edges = [];
+  const roleNames = Object.keys(ROLES);
+
+  // Role hierarchy (left)
+  const hx = 80, hy0 = 50, hyStep = (H - 80) / roleNames.length;
+  roleNames.forEach((r, i) => {
+    nodes.push({ id:`role_${r}`, type:'role', label:r, level:ROLES[r].level,
+      x:hx, y:hy0 + i*hyStep + hyStep/2,
+      active: r===role, ancestor: isAncestor(r, role) });
+    if (i > 0) edges.push({ from:`role_${roleNames[i-1]}`, to:`role_${r}`, type:'hier' });
+  });
+
+  // Policy engine
+  nodes.push({ id:'policy', type:'engine', label:'Policy\nEngine', x:W*0.38, y:H/2 });
+  edges.push({ from:`role_${role}`, to:'policy', type:'active' });
+
+  // Agent
+  const agentBlocked = aDenied.has('agente_comercial');
+  nodes.push({ id:'agent', type:'agent', label:'Agente\nComercial', x:W*0.60, y:H/2, blocked:agentBlocked });
+  edges.push({ from:'policy', to:'agent', type: agentBlocked ? 'deny' : 'allow_thick' });
+
+  // Tools (right)
+  const tx = W - 90;
+  const ty0 = 20, tyStep = (H - 40) / TOOLS.length;
+  TOOLS.forEach((tool, i) => {
+    const dUser  = uDenied.has(tool.name);
+    const allowed = !dUser && !agentBlocked;
+    nodes.push({ id:`tool_${tool.name}`, type:'tool', label:tool.name,
+      x:tx, y:ty0 + i*tyStep + tyStep/2, allowed, dUser, tag:tool.tag });
+    edges.push({ from:'agent', to:`tool_${tool.name}`, type: allowed ? 'allow' : 'deny' });
+  });
+
+  // JWT
+  nodes.push({ id:'jwt', type:'jwt', label:'JWT\nNexus', x:W*0.60 + 90, y:H*0.18 });
+  edges.push({ from:'policy', to:'jwt', type:'ctx' });
+
+  return { nodes, edges };
+}
+
+function isAncestor(ancestorR, targetR) {
+  let cur = ROLES[targetR]?.parent;
+  while (cur) { if (cur === ancestorR) return true; cur = ROLES[cur]?.parent; }
+  return false;
+}
+
+function getNode(id) { return GS.nodes.find(n => n.id === id); }
+
+function drawGraph() {
+  const W = CW || 600;
+  const H = CH;
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid bg
+  ctx.strokeStyle = '#eceae4'; ctx.lineWidth = .5;
+  for (let x=0;x<W;x+=28){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for (let y=0;y<H;y+=28){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+  // Edges
+  GS.edges.forEach(e => {
+    const from = getNode(e.from), to = getNode(e.to);
+    if (!from || !to) return;
+    const col = { hier:'#d0cdc3', active:'#1a56db', allow_thick:'#9fe8c3',
+                  allow:'#9fe8c3', deny:'#f5b8b2', ctx:'#fad97a' }[e.type] || '#d0cdc3';
+    ctx.beginPath();
+    ctx.strokeStyle = col;
+    ctx.lineWidth = ['active','allow_thick'].includes(e.type) ? 2 : 1;
+    ctx.setLineDash(['active','ctx','allow_thick'].includes(e.type) ? [5,4] : []);
+    if (['active','ctx','allow_thick'].includes(e.type)) ctx.lineDashOffset = -animT * 0.07;
+    const mx = (from.x+to.x)/2;
+    ctx.moveTo(from.x, from.y);
+    ctx.bezierCurveTo(mx, from.y, mx, to.y, to.x, to.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    if (e.type !== 'hier') arrow(to.x, to.y, from.x, from.y, col, e.type==='active'?2:1.5);
+  });
+
+  // Nodes
+  GS.nodes.forEach((n, i) => {
+    const pulse = i === GS.activeIdx;
+    if      (n.type==='role')   drawRole(n, pulse);
+    else if (n.type==='engine') drawEngine(n, pulse);
+    else if (n.type==='agent')  drawAgentNode(n, pulse);
+    else if (n.type==='tool')   drawTool(n, pulse);
+    else if (n.type==='jwt')    drawJWT(n, pulse);
+  });
+}
+
+function arrow(tx,ty,fx,fy,col,lw) {
+  const a=Math.atan2(ty-fy,tx-fx),l=7;
+  ctx.beginPath();ctx.strokeStyle=col;ctx.lineWidth=lw;
+  ctx.moveTo(tx-l*Math.cos(a-.4),ty-l*Math.sin(a-.4));
+  ctx.lineTo(tx,ty);
+  ctx.lineTo(tx-l*Math.cos(a+.4),ty-l*Math.sin(a+.4));
+  ctx.stroke();
+}
+
+function drawRole(n, pulse) {
+  const r=18, al=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.globalAlpha=al;
+  ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+  if      (n.active)   { ctx.fillStyle='#1a56db'; ctx.fill(); ctx.strokeStyle='#1547c0'; ctx.lineWidth=2; ctx.stroke(); }
+  else if (n.ancestor) { ctx.fillStyle='#e8f0fe'; ctx.fill(); ctx.strokeStyle='#bfdbfe'; ctx.lineWidth=1.5; ctx.stroke(); }
+  else                 { ctx.fillStyle='#fafaf8'; ctx.fill(); ctx.strokeStyle='#d0cdc3'; ctx.lineWidth=1;   ctx.stroke(); }
+  ctx.globalAlpha=1;
+  ctx.fillStyle=n.active?'#fff':(n.ancestor?'#1a56db':'#a8a49c');
+  ctx.font=`${n.active?'600':'400'} 10px IBM Plex Mono,monospace`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(n.level), n.x, n.y);
+  ctx.fillStyle=n.active?'#1a1916':(n.ancestor?'#1a56db':'#a8a49c');
+  ctx.font=`${n.active?'600':'400'} 11px IBM Plex Sans,sans-serif`;
+  ctx.textAlign='left';
+  ctx.fillText(n.label, n.x+r+5, n.y);
+}
+
+function drawEngine(n, pulse) {
+  const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8); ctx.fillStyle='#1a1916'; ctx.fill();
+  ctx.globalAlpha=1; ctx.fillStyle='#fff';
+  ctx.font='600 11px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
+function drawAgentNode(n, pulse) {
+  const w=80,h=42,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8);
+  if (n.blocked) { ctx.fillStyle='#fdf0ee'; ctx.fill(); ctx.strokeStyle='#f5b8b2'; ctx.lineWidth=1.5; ctx.stroke(); }
+  else           { ctx.fillStyle='#e8f7f0'; ctx.fill(); ctx.strokeStyle='#9fe8c3'; ctx.lineWidth=1.5; ctx.stroke(); }
+  ctx.globalAlpha=1;
+  ctx.fillStyle=n.blocked?'#c0392b':'#0f7b44';
+  ctx.font='600 11px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
+function drawTool(n, pulse) {
+  const w=96,h=20,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,4);
+  if (n.allowed) { ctx.fillStyle='#e8f7f0'; ctx.fill(); ctx.strokeStyle='#9fe8c3'; }
+  else           { ctx.fillStyle='#fdf0ee'; ctx.fill(); ctx.strokeStyle='#f5b8b2'; }
+  ctx.lineWidth=1; ctx.stroke();
+  ctx.globalAlpha=1;
+  ctx.fillStyle=n.allowed?'#0f7b44':'#c0392b';
+  ctx.font='500 10px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  let lbl=n.label; if(lbl.length>13)lbl=lbl.slice(0,12)+'…';
+  ctx.fillText(lbl, n.x, n.y);
+}
+
+function drawJWT(n, pulse) {
+  const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8);
+  ctx.fillStyle='#fffbeb'; ctx.fill(); ctx.strokeStyle='#fad97a'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.globalAlpha=1; ctx.fillStyle='#a05c00';
+  ctx.font='600 11px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
+function rr(x,y,w,h,r) {
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+
+function startAnim() {
+  if (animId) cancelAnimationFrame(animId);
+  function loop() { animT++; drawGraph(); animId = requestAnimationFrame(loop); }
+  loop();
+}
+
+// ═══════════════════════════════════════════
+// SIMULATION
+// ═══════════════════════════════════════════
+
+async function runSim() {
+  const name    = document.getElementById('f-name').value.trim() || 'Usuário';
+  const role    = document.getElementById('f-role').value;
+  const email   = document.getElementById('f-email').value.trim();
+  const channel = document.getElementById('f-channel').value;
+
+  const { nodes, edges } = buildGraph(role, userDenied, agentDenied);
+  GS = { nodes, edges, activeIdx:-1 };
+
+  document.getElementById('empty').style.display = 'none';
+  const res = document.getElementById('results');
+  res.style.display = 'flex';
+  document.getElementById('trace-list').innerHTML   = '';
+  document.getElementById('tools-grid').innerHTML   = '';
+  document.getElementById('jwt-body').innerHTML     = '';
+  document.getElementById('tools-summary').innerHTML = '';
+
+  const btn = document.getElementById('sim-btn');
+  btn.disabled = true; btn.textContent = '⏳ Processando…';
+  document.getElementById('graph-status').textContent = 'processando…';
+  document.getElementById('graph-status').className = 'tag tag-yellow';
+
+  const globalDenyTags = ROLES[role]?.globalDenyTags || [];
+  const agentBlocked   = agentDenied.has('agente_comercial');
+
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id===`role_${role}`);
+  await trace({ step:'1', type:'info', label:'Identity Registry',
+    desc:`JWT decodificado. E-mail <code>${email}</code> → user_id interno. Canal: <code>${channel}</code>` });
+
+  await trace({ step:'2', type:'info', label:`Cargo resolvido: ${role}`,
+    desc:`Access level <code>${ROLES[role]?.level}</code>. Percorrendo árvore hierárquica para acumular deny_tags.` });
+
+  const chain=[]; let cur=role;
+  while(cur){ chain.unshift(cur); cur=ROLES[cur]?.parent; }
+  for(const r of chain){
+    const tags=ROLES[r]?.globalDenyTags||[];
+    if(tags.length) await trace({ step:'↳', type:'warn', label:`role_denials @ ${r}`,
+      desc:`Tags bloqueadas: ${tags.map(t=>`<code>${t}</code>`).join(', ')} — afetam tools de outros setores` }, 150);
+  }
+
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='policy');
+  if (userDenied.size > 0) {
+    await trace({ step:'3', type:'fail', label:'user_denials encontradas',
+      desc:`Exceções individuais: ${[...userDenied].map(t=>`<code>${t}</code>`).join(', ')}` });
+  } else {
+    await trace({ step:'3', type:'ok', label:'user_denials: nenhuma', desc:'Sem exceções individuais para este usuário.' });
+  }
+
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='agent');
+  if (agentBlocked) {
+    await trace({ step:'4', type:'fail', label:'agente_comercial BLOQUEADO',
+      desc:'Não está em <code>available_agents[]</code>. Nenhuma tool avaliada — agente não é acionado.' });
+    await traceToolsBlocked();
+  } else {
+    await trace({ step:'4', type:'ok', label:'agente_comercial disponível',
+      desc:'Presente em <code>available_agents[]</code>. Iniciando avaliação das tools.' });
+    await traceTools(globalDenyTags);
+  }
+
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='jwt');
+  await trace({ step:'5', type:'ok', label:'JWT Nexus emitido',
+    desc:`Token RS256 com <code>available_agents[]</code> resolvido. Canal <code>${channel}</code>. output_mode: <code>${channel==='whatsapp'?'condensed':'full'}</code>` });
+  GS.activeIdx = -1;
+
+  const allowed = TOOLS.filter(t => !userDenied.has(t.name) && !agentBlocked).length;
+  const denied  = TOOLS.length - allowed;
+
+  document.getElementById('graph-status').textContent = agentBlocked ? 'agente bloqueado' : `${allowed} permitidas · ${denied} bloqueadas`;
+  document.getElementById('graph-status').className   = agentBlocked ? 'tag tag-red' : (denied>0?'tag tag-yellow':'tag tag-green');
+  document.getElementById('trace-tag').textContent    = `${allowed} allow · ${denied} deny`;
+  document.getElementById('trace-tag').className      = allowed===TOOLS.length?'tag tag-green':'tag tag-yellow';
+
+  TOOLS.forEach((tool, i) => {
+    const dUser = userDenied.has(tool.name);
+    const ok    = !dUser && !agentBlocked;
+    const c     = TAG_COLORS[tool.tag];
+    const card  = document.createElement('div');
+    card.className = `tool-card ${ok?'t-allowed':'t-denied'}`;
+    card.style.animationDelay = `${i*40}ms`;
+    card.innerHTML = `
+      <div class="tool-card-name">${tool.name}</div>
+      <div class="tool-card-tag" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${tool.tag}</div>
+      <div class="tool-card-status"><div class="dot"></div>${ok?'Injetada':(agentBlocked?'Bloq. agente':'Bloq. exceção')}</div>`;
+    document.getElementById('tools-grid').appendChild(card);
+  });
+
+  document.getElementById('tools-summary').innerHTML = `
+    <div class="sum-item"><div class="sum-num" style="color:var(--green)">${allowed}</div><div class="sum-label">injetadas<br><span style="font-family:var(--mono);font-size:10px">no agente</span></div></div>
+    <div class="sum-item"><div class="sum-num" style="color:var(--red)">${denied}</div><div class="sum-label">removidas<br><span style="font-family:var(--mono);font-size:10px">do contexto</span></div></div>
+    <div class="sum-item"><div class="sum-num" style="color:var(--muted)">${TOOLS.length}</div><div class="sum-label">total<br><span style="font-family:var(--mono);font-size:10px">no pool</span></div></div>
+    <div class="sum-item" style="flex:1"><div style="font-size:12px;color:var(--dim);font-family:var(--mono)">canal: <strong style="color:var(--text)">${channel}</strong><br>output: <strong style="color:var(--text)">${channel==='whatsapp'?'condensado':'markdown completo'}</strong></div></div>`;
+
+  const availAgents = AGENTS.filter(a=>!agentDenied.has(a.name)).map(a=>a.name);
+  const jwt = {
+    sub:             `usr_${name.toLowerCase().replace(/\s+/g,'_').slice(0,12)}_${Math.floor(Math.random()*900)+100}`,
+    email, role,
+    access_level:    ROLES[role]?.level,
+    available_agents: availAgents,
+    channel,
+    output_mode:     channel==='whatsapp'?'condensed':'full',
+    deny_tools:      [...userDenied],
+    setor:           'comercial',
+    exp:             Math.floor(Date.now()/1000)+3600,
+    iat:             Math.floor(Date.now()/1000),
+  };
+  document.getElementById('jwt-body').innerHTML = syntaxHL(jwt);
+
+  btn.disabled = false; btn.textContent = '▶ Simular Permissões';
+}
+
+async function traceTools(globalDenyTags) {
+  for (let i=0; i<TOOLS.length; i++) {
+    const tool = TOOLS[i];
+    GS.activeIdx = GS.nodes.findIndex(n=>n.id===`tool_${tool.name}`);
+    const dUser = userDenied.has(tool.name);
+    const ok    = !dUser;
+    const desc  = dUser
+      ? `user_denial explícito para este usuário`
+      : `permitida · tag <code>${tool.tag}</code> · nenhuma deny rule aplicável`;
+    await trace({ step:ok?'✓':'✗', type:ok?'ok':'fail', label:tool.name, desc, result:ok?'allow':'deny' }, 90);
+  }
+}
+
+async function traceToolsBlocked() {
+  for (let i=0; i<TOOLS.length; i++) {
+    GS.activeIdx = GS.nodes.findIndex(n=>n.id===`tool_${TOOLS[i].name}`);
+    await trace({ step:'✗', type:'fail', label:TOOLS[i].name,
+      desc:`Não avaliada — agente_comercial bloqueado. LLM nunca recebe esta tool.`, result:'deny' }, 60);
+  }
+}
+
+function delay(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+async function trace({ step, type, label, desc, result }, ms=300) {
+  await delay(ms);
+  const list = document.getElementById('trace-list');
+  const item = document.createElement('div');
+  item.className = 'trace-item';
+  const rb = result==='allow' ? `<span class="trace-badge tb-allow">PERMITIDA</span>`
+           : result==='deny'  ? `<span class="trace-badge tb-deny">BLOQUEADA</span>` : '';
+  item.innerHTML = `
+    <div class="trace-step step-${type==='ok'?'ok':type==='fail'?'fail':type==='warn'?'warn':'info'}">${step}</div>
+    <div class="trace-body">
+      <div class="trace-label">${label}</div>
+      <div class="trace-desc">${desc}</div>
+    </div>${rb}`;
+  list.appendChild(item);
+  item.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function syntaxHL(obj) {
+  return JSON.stringify(obj, null, 2)
+    .replace(/("[\w_@.]+"):/g, '<span class="jk">$1</span>:')
+    .replace(/: ("(?!.*\.\.).*?")/g, ': <span class="js">$1</span>')
+    .replace(/: (\d+)/g, ': <span class="jn">$1</span>')
+    .replace(/: (true|false)/g, ': <span class="jb">$1</span>');
+}
+
+// ═══════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════
+
+buildDenyGrid();
+buildAgentGrid();
+updateRoleDenyDisplay();
+updatePreview();
+
+// Wait for layout paint before reading offsetWidth
+requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
+    initCanvas();
+    startAnim();
+  });
+});
+</script>
+</body>
+</html>

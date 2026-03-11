@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f5f4f0; --panel:#fff; --panel2:#fafaf8;
+  --border:#e2e0d8; --border2:#d0cdc3;
+  --text:#1a1916; --muted:#6b6860; --dim:#a8a49c;
+  --accent:#1a56db; --accent-s:#e8f0fe;
+  --green:#0f7b44; --green-s:#e8f7f0; --green-b:#9fe8c3;
+  --red:#c0392b; --red-s:#fdf0ee; --red-b:#f5b8b2;
+  --yellow:#a05c00; --yellow-s:#fef8e7; --yellow-b:#fad97a;
+  --purple:#6d28d9; --purple-s:#f5f3ff; --purple-b:#c4b5fd;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+  --radius:8px; --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 12px rgba(0,0,0,.04);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+/* ── Shell ── */
+.app{display:grid;grid-template-columns:220px 1fr;grid-template-rows:52px 1fr;min-height:100vh;}
+
+/* ── Topbar ── */
+.topbar{grid-column:1/-1;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 20px;}
+.topbar-logo{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);}
+.topbar-sep{flex:1;}
+.badge{font-family:var(--mono);font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;}
+.badge-blue{background:var(--accent-s);color:var(--accent);border:1px solid #bfdbfe;}
+.admin-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;cursor:pointer;}
+
+/* ── Sidebar ── */
+.sidebar{background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:12px 0;}
+.sidebar-section{padding:0 12px;margin-bottom:4px;}
+.sidebar-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--dim);padding:8px 8px 4px;font-family:var(--mono);}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .12s;user-select:none;}
+.sidebar-item:hover{background:var(--bg);color:var(--text);}
+.sidebar-item.active{background:var(--accent-s);color:var(--accent);font-weight:600;}
+.sidebar-item .si-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sidebar-sep{height:1px;background:var(--border);margin:10px 12px;}
+
+/* ── Main ── */
+.main{overflow-y:auto;display:flex;flex-direction:column;}
+.page-head{padding:20px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-shrink:0;}
+.page-title{font-size:18px;font-weight:700;margin-bottom:2px;}
+.page-sub{font-size:12px;color:var(--dim);font-family:var(--mono);}
+
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans);transition:all .12s;}
+.btn-primary{background:var(--accent);color:#fff;}
+.btn-primary:hover{background:#1547c0;}
+.btn-ghost{background:var(--panel);color:var(--muted);border:1px solid var(--border2);}
+.btn-ghost:hover{background:var(--bg);color:var(--text);}
+.btn-sm{padding:5px 10px;font-size:12px;}
+
+/* ── Stats ── */
+.stats-bar{display:flex;gap:12px;padding:16px 24px;flex-shrink:0;}
+.stat-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px 18px;flex:1;box-shadow:var(--shadow);}
+.stat-num{font-family:var(--mono);font-size:22px;font-weight:600;}
+.stat-label{font-size:11px;color:var(--dim);margin-top:2px;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;font-family:var(--mono);}
+
+/* ── Filters ── */
+.filter-bar{padding:0 24px 12px;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.search-wrap{position:relative;flex:1;max-width:320px;}
+.search-wrap input{width:100%;padding:7px 11px 7px 32px;border:1px solid var(--border2);border-radius:6px;font-size:13px;font-family:var(--sans);color:var(--text);background:var(--panel);outline:none;transition:border-color .15s,box-shadow .15s;}
+.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,219,.08);}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:13px;pointer-events:none;}
+.filter-select{padding:7px 28px 7px 10px;border:1px solid var(--border2);border-radius:6px;font-size:12px;font-family:var(--sans);color:var(--text);background:var(--panel);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a8a49c'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+
+/* ── Table ── */
+.table-wrap{margin:0 24px 24px;background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);background:var(--panel2);border-bottom:1px solid var(--border);font-family:var(--mono);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;cursor:pointer;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--panel2);}
+tbody td{padding:12px 16px;font-size:13px;vertical-align:middle;}
+.user-cell{display:flex;align-items:center;gap:10px;}
+.u-avatar{width:30px;height:30px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.u-name{font-weight:600;font-size:13px;}
+.u-email{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:1px;}
+.agents-cell{display:flex;gap:4px;flex-wrap:wrap;}
+.deny-count{font-family:var(--mono);font-size:12px;color:var(--red);font-weight:600;}
+.deny-none{font-family:var(--mono);font-size:12px;color:var(--dim);}
+.online-dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;}
+.online-dot.on{background:var(--green);}
+.online-dot.off{background:var(--border2);}
+
+/* ── Tags ── */
+.tag{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;white-space:nowrap;}
+.tag-green{background:var(--green-s);color:var(--green);border:1px solid var(--green-b);}
+.tag-red{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);}
+.tag-yellow{background:var(--yellow-s);color:var(--yellow);border:1px solid var(--yellow-b);}
+.tag-blue{background:var(--accent-s);color:var(--accent);border:1px solid #bfdbfe;}
+.tag-gray{background:var(--panel2);color:var(--dim);border:1px solid var(--border);}
+
+/* ── Drawer ── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.18);z-index:100;opacity:0;pointer-events:none;transition:opacity .2s;}
+.drawer-overlay.open{opacity:1;pointer-events:all;}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:640px;background:var(--panel);border-left:1px solid var(--border);z-index:101;transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow:hidden;box-shadow:-4px 0 24px rgba(0,0,0,.08);}
+.drawer.open{transform:translateX(0);}
+
+.drawer-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.drawer-avatar{width:38px;height:38px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;flex-shrink:0;}
+.drawer-name{font-size:14px;font-weight:700;}
+.drawer-email{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:1px;}
+.drawer-close{margin-left:auto;width:28px;height:28px;border-radius:6px;background:var(--panel2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--muted);transition:all .12s;flex-shrink:0;}
+.drawer-close:hover{background:var(--bg);color:var(--text);}
+
+/* Drawer tabs */
+.drawer-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel);flex-shrink:0;padding:0 20px;gap:2px;}
+.drawer-tab{padding:11px 14px 9px;font-size:12px;font-weight:600;color:var(--dim);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;font-family:var(--sans);transition:color .15s;white-space:nowrap;}
+.drawer-tab:hover{color:var(--text);}
+.drawer-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* Drawer tab views */
+.drawer-tab-view{display:none;flex:1;overflow-y:auto;flex-direction:column;}
+.drawer-tab-view.active{display:flex;}
+
+/* Permissions tab sections */
+.drawer-section{border-bottom:1px solid var(--border);}
+.drawer-section-head{padding:13px 20px 9px;display:flex;align-items:center;justify-content:space-between;}
+.drawer-section-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--dim);font-family:var(--mono);}
+.drawer-section-body{padding:0 20px 14px;}
+
+.identity-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.id-field{display:flex;flex-direction:column;gap:3px;}
+.id-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);font-family:var(--mono);}
+.id-value{font-size:13px;color:var(--text);font-weight:500;}
+.id-value.mono{font-family:var(--mono);font-size:12px;}
+
+.role-chain{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.role-node{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;font-size:12px;font-weight:500;}
+.role-node.active{background:var(--accent);color:#fff;font-weight:700;}
+.role-node.ancestor{background:var(--accent-s);color:var(--accent);border:1px solid #bfdbfe;}
+.role-node.inactive{background:var(--panel2);color:var(--dim);border:1px solid var(--border);}
+.role-arrow{color:var(--dim);font-size:12px;}
+.role-level{font-family:var(--mono);font-size:10px;opacity:.7;}
+
+.deny-tags-list{display:flex;flex-direction:column;gap:5px;}
+.deny-tag-row{display:flex;align-items:center;gap:8px;padding:7px 11px;background:var(--red-s);border:1px solid var(--red-b);border-radius:6px;font-family:var(--mono);font-size:11px;color:var(--red);}
+.deny-tag-row.none{background:var(--green-s);border-color:var(--green-b);color:var(--green);}
+
+.tool-toggle-list{display:flex;flex-direction:column;gap:5px;}
+.tool-toggle-row{display:flex;align-items:center;gap:8px;padding:8px 11px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;user-select:none;}
+.tool-toggle-row:hover{border-color:var(--border2);background:#f0ede6;}
+.tool-toggle-row.denied{background:var(--red-s);border-color:var(--red-b);}
+.tool-toggle-row.denied .tt-name{color:var(--red);}
+.tt-name{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:500;flex:1;}
+.tt-tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;flex-shrink:0;}
+.toggle-pill{width:32px;height:18px;border-radius:9px;background:var(--border2);position:relative;transition:background .2s;flex-shrink:0;}
+.toggle-pill::after{content:'';position:absolute;width:12px;height:12px;border-radius:50%;background:#fff;top:3px;left:3px;transition:transform .2s;box-shadow:0 1px 2px rgba(0,0,0,.2);}
+.tool-toggle-row.denied .toggle-pill{background:var(--red);}
+.tool-toggle-row.denied .toggle-pill::after{transform:translateX(14px);}
+
+.agent-toggle-list{display:flex;flex-direction:column;gap:5px;}
+.agent-toggle-row{display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--panel2);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all .15s;user-select:none;}
+.agent-toggle-row:hover{border-color:var(--border2);}
+.agent-toggle-row.blocked{background:var(--red-s);border-color:var(--red-b);}
+.agent-toggle-row.blocked .tt-name{color:var(--red);}
+.at-sector{font-size:10px;font-family:var(--mono);color:var(--dim);padding:1px 6px;border-radius:3px;background:var(--panel);border:1px solid var(--border);}
+
+/* ── Simulator tab ── */
+.sim-tab-inner{display:flex;flex-direction:column;gap:0;flex:1;}
+
+.sim-graph-wrap{background:var(--panel);border-bottom:1px solid var(--border);}
+.sim-graph-head{padding:12px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);}
+.sim-graph-title{font-size:12px;font-weight:600;color:var(--text);}
+.sim-graph-sub{font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:1px;}
+.canvas-wrap{width:100%;line-height:0;background:var(--panel2);}
+canvas{display:block;}
+
+.sim-run-bar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:var(--panel2);flex-shrink:0;}
+.sim-run-hint{font-size:11px;color:var(--dim);font-family:var(--mono);flex:1;}
+.sim-run-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans);background:var(--accent);color:#fff;transition:all .12s;}
+.sim-run-btn:hover{background:#1547c0;}
+.sim-run-btn:disabled{background:var(--border2);cursor:not-allowed;}
+
+.trace-wrap{flex:1;overflow-y:auto;}
+.trace-empty{padding:32px 20px;text-align:center;color:var(--dim);font-size:12px;line-height:1.7;}
+.trace-empty .te-icon{font-size:24px;margin-bottom:8px;opacity:.4;}
+
+.trace-item{display:flex;gap:10px;padding:10px 20px;border-bottom:1px solid var(--border);align-items:flex-start;animation:fadeIn .2s ease both;}
+.trace-item:last-child{border-bottom:none;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.trace-step{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--mono);margin-top:2px;}
+.step-ok{background:var(--green-s);color:var(--green);border:1px solid var(--green-b);}
+.step-fail{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);}
+.step-info{background:var(--accent-s);color:var(--accent);border:1px solid #bfdbfe;}
+.step-warn{background:var(--yellow-s);color:var(--yellow);border:1px solid var(--yellow-b);}
+.trace-body{flex:1;}
+.trace-label{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.trace-desc{font-size:11px;color:var(--muted);line-height:1.5;}
+.trace-desc code{font-family:var(--mono);font-size:10px;background:var(--panel2);border:1px solid var(--border);padding:1px 4px;border-radius:3px;color:var(--text);}
+.trace-badge{font-family:var(--mono);font-size:10px;font-weight:700;padding:1px 6px;border-radius:3px;align-self:center;flex-shrink:0;}
+.tb-allow{background:var(--green-s);color:var(--green);border:1px solid var(--green-b);}
+.tb-deny{background:var(--red-s);color:var(--red);border:1px solid var(--red-b);}
+
+/* ── Save bar ── */
+.drawer-save{padding:13px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--panel);}
+.save-hint{font-size:11px;color:var(--dim);flex:1;font-family:var(--mono);}
+.save-dot{width:6px;height:6px;border-radius:50%;background:var(--yellow);display:inline-block;margin-right:5px;}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;z-index:200;background:var(--text);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(8px);opacity:0;transition:all .2s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="topbar-logo"><div class="logo-dot"></div>Nexus</div>
+    <span style="font-size:12px;color:var(--dim);font-family:var(--mono)">/ admin</span>
+    <div class="topbar-sep"></div>
+    <span class="badge badge-blue">IAM v1.1</span>
+    <div class="admin-avatar" style="margin-left:8px">P</div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Principal</div>
+      <div class="sidebar-item active" onclick="setNav(this)"><span class="si-icon">👥</span> Usuários</div>
+      <div class="sidebar-item" onclick="setNav(this)"><span class="si-icon">🤖</span> Agentes</div>
+    </div>
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Sistema</div>
+      <div class="sidebar-item" onclick="setNav(this)"><span class="si-icon">⚙️</span> Configurações</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Usuários</div>
+        <div class="page-sub">Gerenciamento de acessos e permissões IAM</div>
+      </div>
+      <button class="btn btn-primary" onclick="showToast('Funcionalidade em breve')">+ Convidar usuário</button>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total de usuários</div><div class="stat-sub">setor comercial</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-active" style="color:var(--green)">—</div><div class="stat-label">Com acesso ativo</div><div class="stat-sub">agente_comercial</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-exceptions" style="color:var(--yellow)">—</div><div class="stat-label">Com exceções</div><div class="stat-sub">user_denials ativos</div></div>
+      <div class="stat-card"><div class="stat-num" id="stat-blocked" style="color:var(--red)">—</div><div class="stat-label">Bloqueados</div><div class="stat-sub">sem agentes ativos</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" type="text" placeholder="Buscar por nome ou e-mail…" oninput="renderTable()">
+      </div>
+      <select class="filter-select" id="filter-role" onchange="renderTable()">
+        <option value="">Todos os cargos</option>
+        <option value="Diretor">Diretor</option>
+        <option value="Gerente Comercial">Gerente Comercial</option>
+        <option value="Vendedor/SDR">Vendedor/SDR</option>
+      </select>
+      <select class="filter-select" id="filter-status" onchange="renderTable()">
+        <option value="">Todos os status</option>
+        <option value="active">Com acesso</option>
+        <option value="blocked">Bloqueados</option>
+        <option value="exceptions">Com exceções</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuário</th><th>Cargo</th><th>Agentes</th><th>Exceções</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="user-tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- Overlay -->
+<div class="drawer-overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<!-- Drawer -->
+<div class="drawer" id="drawer">
+
+  <div class="drawer-head">
+    <div class="drawer-avatar" id="d-avatar">—</div>
+    <div>
+      <div class="drawer-name" id="d-name">—</div>
+      <div class="drawer-email" id="d-email">—</div>
+    </div>
+    <div class="drawer-close" onclick="closeDrawer()">✕</div>
+  </div>
+
+  <div class="drawer-tabs">
+    <button class="drawer-tab active" onclick="switchDrawerTab('perms',this)">Permissões</button>
+    <button class="drawer-tab" onclick="switchDrawerTab('sim',this)">Simular</button>
+  </div>
+
+  <!-- ── Tab: Permissões ── -->
+  <div class="drawer-tab-view active" id="dtab-perms">
+
+    <div class="drawer-section">
+      <div class="drawer-section-head"><div class="drawer-section-title">Identidade</div></div>
+      <div class="drawer-section-body">
+        <div class="identity-grid">
+          <div class="id-field"><div class="id-label">User ID</div><div class="id-value mono" id="d-uid">—</div></div>
+          <div class="id-field"><div class="id-label">Canal padrão</div><div class="id-value" id="d-channel">—</div></div>
+          <div class="id-field"><div class="id-label">Departamento</div><div class="id-value" id="d-dept">—</div></div>
+          <div class="id-field"><div class="id-label">Access level</div><div class="id-value mono" id="d-level">—</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-head">
+        <div class="drawer-section-title">Cargo & Hierarquia</div>
+        <select id="d-role-select" class="filter-select" style="font-size:11px" onchange="onDrawerRoleChange()">
+          <option value="Diretor">Diretor</option>
+          <option value="Gerente Comercial">Gerente Comercial</option>
+          <option value="Vendedor/SDR">Vendedor/SDR</option>
+        </select>
+      </div>
+      <div class="drawer-section-body">
+        <div class="role-chain" id="d-role-chain"></div>
+        <div class="deny-tags-list" id="d-deny-tags"></div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-head">
+        <div class="drawer-section-title">Exceções Individuais</div>
+        <span style="font-size:11px;color:var(--dim);font-family:var(--mono)">user_denials</span>
+      </div>
+      <div class="drawer-section-body">
+        <div style="font-size:11px;color:var(--dim);font-family:var(--mono);margin-bottom:10px">Bloqueia tools específicas para este usuário, independente do cargo.</div>
+        <div class="tool-toggle-list" id="d-tool-toggles"></div>
+      </div>
+    </div>
+
+    <div class="drawer-section">
+      <div class="drawer-section-head">
+        <div class="drawer-section-title">Agentes Disponíveis</div>
+        <span style="font-size:11px;color:var(--dim);font-family:var(--mono)">available_agents</span>
+      </div>
+      <div class="drawer-section-body">
+        <div style="font-size:11px;color:var(--dim);font-family:var(--mono);margin-bottom:10px">Desativar bloqueia o agente inteiro — tools não chegam a ser avaliadas.</div>
+        <div class="agent-toggle-list" id="d-agent-toggles"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Tab: Simular ── -->
+  <div class="drawer-tab-view" id="dtab-sim">
+    <div class="sim-tab-inner">
+
+      <div class="sim-graph-wrap">
+        <div class="sim-graph-head">
+          <div>
+            <div class="sim-graph-title">Grafo de Permissões</div>
+            <div class="sim-graph-sub">baseado no draft atual · não salvo</div>
+          </div>
+          <span class="tag tag-gray" id="sim-graph-status">draft</span>
+        </div>
+        <div class="canvas-wrap" id="sim-canvas-wrap">
+          <canvas id="sim-gc"></canvas>
+        </div>
+      </div>
+
+      <div class="sim-run-bar">
+        <div class="sim-run-hint" id="sim-run-hint">Clique em Executar para ver o trace completo das decisões IAM.</div>
+        <button class="sim-run-btn" id="sim-run-btn" onclick="runSimulation()">▶ Executar trace</button>
+      </div>
+
+      <div class="trace-wrap" id="trace-wrap">
+        <div class="trace-empty" id="trace-empty">
+          <div class="te-icon">⬡</div>
+          Execute o trace para ver cada decisão<br>do Policy Engine em tempo real.
+        </div>
+        <div id="trace-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Save bar (always visible) -->
+  <div class="drawer-save">
+    <div class="save-hint" id="save-hint">Nenhuma alteração pendente</div>
+    <button class="btn btn-ghost btn-sm" onclick="closeDrawer()">Cancelar</button>
+    <button class="btn btn-primary btn-sm" id="save-btn" onclick="saveUser()">Salvar alterações</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════
+
+const ROLES = {
+  'Diretor':           { level:80,  parent:'CEO',              globalDenyTags:['admin'] },
+  'Gerente Comercial': { level:60,  parent:'Diretor',          globalDenyTags:['admin','payments'] },
+  'Vendedor/SDR':      { level:40,  parent:'Gerente Comercial',globalDenyTags:['admin','payments','financial'] },
+};
+
+const TOOLS = [
+  { name:'mcp_query',             tag:'internal' },
+  { name:'generate_proposal',     tag:'internal' },
+  { name:'knowledge_base_search', tag:'internal' },
+  { name:'web_search',            tag:'public'   },
+  { name:'get_address_from_cep',  tag:'public'   },
+];
+
+const AGENTS = [
+  { name:'agente_comercial',  sector:'Comercial'  },
+  { name:'agente_rh',         sector:'RH'         },
+  { name:'agente_financeiro', sector:'Financeiro' },
+];
+
+const TAG_COLORS = {
+  internal:{ bg:'#e8f0fe', text:'#1a56db', border:'#bfdbfe' },
+  public:  { bg:'#e8f7f0', text:'#0f7b44', border:'#9fe8c3' },
+};
+
+const AVATAR_COLORS = ['#1a56db','#0f7b44','#6d28d9','#a05c00','#c0392b','#0e7490'];
+
+const USERS = [
+  { id:'usr_peterson_001', name:'Peterson Silva',   email:'peterson@empresa.com',     role:'Diretor',           dept:'Comercial', channel:'web',      online:true,  userDenials:[], agentDenials:[] },
+  { id:'usr_ana_002',      name:'Ana Paula Costa',  email:'ana.paula@empresa.com',    role:'Gerente Comercial', dept:'Comercial', channel:'web',      online:true,  userDenials:['mcp_query'], agentDenials:[] },
+  { id:'usr_carlos_003',   name:'Carlos Mendes',    email:'carlos.mendes@empresa.com',role:'Vendedor/SDR',      dept:'Comercial', channel:'whatsapp', online:true,  userDenials:[], agentDenials:[] },
+  { id:'usr_juliana_004',  name:'Juliana Ramos',    email:'juliana.r@empresa.com',    role:'Vendedor/SDR',      dept:'Comercial', channel:'whatsapp', online:false, userDenials:[], agentDenials:[] },
+  { id:'usr_marcos_005',   name:'Marcos Oliveira',  email:'marcos.o@empresa.com',     role:'Vendedor/SDR',      dept:'Comercial', channel:'whatsapp', online:false, userDenials:['web_search','generate_proposal'], agentDenials:[] },
+  { id:'usr_fernanda_006', name:'Fernanda Torres',  email:'fernanda.t@empresa.com',   role:'Gerente Comercial', dept:'Comercial', channel:'web',      online:false, userDenials:[], agentDenials:['agente_comercial'] },
+];
+
+// Draft state
+let activeUser = null;
+let draftDenials = new Set();
+let draftAgentDenials = new Set();
+let draftRole = '';
+let isDirty = false;
+
+// ═══════════════════════════════════════════
+// TABLE
+// ═══════════════════════════════════════════
+
+function renderTable() {
+  const q      = document.getElementById('search-input').value.toLowerCase();
+  const role   = document.getElementById('filter-role').value;
+  const status = document.getElementById('filter-status').value;
+
+  const filtered = USERS.filter(u => {
+    if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+    if (role && u.role !== role) return false;
+    if (status === 'active'     && u.agentDenials.includes('agente_comercial')) return false;
+    if (status === 'blocked'    && !u.agentDenials.includes('agente_comercial')) return false;
+    if (status === 'exceptions' && u.userDenials.length === 0) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('user-tbody');
+  tbody.innerHTML = '';
+  filtered.forEach(u => {
+    const col  = avatarColor(u.id);
+    const avail = AGENTS.filter(a => !u.agentDenials.includes(a.name));
+    const tr = document.createElement('tr');
+    tr.onclick = () => openDrawer(u);
+    tr.innerHTML = `
+      <td><div class="user-cell">
+        <div class="u-avatar" style="background:${col}">${u.name[0]}</div>
+        <div><div class="u-name">${u.name}</div><div class="u-email">${u.email}</div></div>
+      </div></td>
+      <td><span class="tag tag-yellow">${u.role}</span></td>
+      <td><div class="agents-cell">
+        ${avail.map(a=>`<span class="tag tag-blue">${a.name.replace('agente_','')}</span>`).join('')}
+        ${avail.length===0?'<span class="tag tag-red">nenhum</span>':''}
+      </div></td>
+      <td>${u.userDenials.length>0?`<span class="deny-count">${u.userDenials.length} exceção(ões)</span>`:`<span class="deny-none">—</span>`}</td>
+      <td><span class="online-dot ${u.online?'on':'off'}"></span><span style="font-size:12px;color:var(--muted)">${u.online?'Online':'Offline'}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openDrawerById('${u.id}')">Editar</button></td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('stat-total').textContent      = USERS.length;
+  document.getElementById('stat-active').textContent     = USERS.filter(u=>!u.agentDenials.includes('agente_comercial')).length;
+  document.getElementById('stat-exceptions').textContent = USERS.filter(u=>u.userDenials.length>0).length;
+  document.getElementById('stat-blocked').textContent    = USERS.filter(u=>u.agentDenials.includes('agente_comercial')).length;
+}
+
+function avatarColor(id) {
+  let h=0; for(let c of id) h=(h*31+c.charCodeAt(0))%AVATAR_COLORS.length;
+  return AVATAR_COLORS[h];
+}
+
+// ═══════════════════════════════════════════
+// DRAWER
+// ═══════════════════════════════════════════
+
+function openDrawerById(id) { openDrawer(USERS.find(u=>u.id===id)); }
+
+function openDrawer(u) {
+  activeUser        = USERS.find(x=>x.id===u.id)||u;
+  draftDenials      = new Set(activeUser.userDenials);
+  draftAgentDenials = new Set(activeUser.agentDenials);
+  draftRole         = activeUser.role;
+  isDirty           = false;
+
+  const col = avatarColor(activeUser.id);
+  document.getElementById('d-avatar').textContent        = activeUser.name[0];
+  document.getElementById('d-avatar').style.background   = col;
+  document.getElementById('d-name').textContent          = activeUser.name;
+  document.getElementById('d-email').textContent         = activeUser.email;
+  document.getElementById('d-uid').textContent           = activeUser.id;
+  document.getElementById('d-channel').textContent       = activeUser.channel;
+  document.getElementById('d-dept').textContent          = activeUser.dept;
+  document.getElementById('d-level').textContent         = `${ROLES[activeUser.role]?.level} / 100`;
+  document.getElementById('d-role-select').value         = activeUser.role;
+
+  // Reset to perms tab
+  switchDrawerTab('perms', document.querySelector('.drawer-tab'));
+
+  renderDrawerRole();
+  renderToolToggles();
+  renderAgentToggles();
+  updateSaveHint();
+  resetSimulator();
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  stopAnim();
+  activeUser = null;
+}
+
+function switchDrawerTab(id, btn) {
+  document.querySelectorAll('.drawer-tab').forEach(b=>b.classList.remove('active'));
+  // find the right button if called programmatically
+  document.querySelectorAll('.drawer-tab').forEach(b => {
+    if ((id==='perms' && b.textContent==='Permissões') ||
+        (id==='sim'   && b.textContent==='Simular')) b.classList.add('active');
+  });
+  if (btn) { document.querySelectorAll('.drawer-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  document.querySelectorAll('.drawer-tab-view').forEach(v=>v.classList.toggle('active', v.id==='dtab-'+id));
+  if (id==='sim') {
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{ initCanvas(); rebuildGraph(); }));
+  } else {
+    stopAnim();
+  }
+}
+
+function onDrawerRoleChange() {
+  draftRole = document.getElementById('d-role-select').value;
+  document.getElementById('d-level').textContent = `${ROLES[draftRole]?.level} / 100`;
+  renderDrawerRole();
+  markDirty();
+  rebuildGraph();
+  resetSimulatorResults();
+}
+
+function renderDrawerRole() {
+  const role  = draftRole;
+  const chain = document.getElementById('d-role-chain');
+  const tags  = document.getElementById('d-deny-tags');
+  chain.innerHTML = '';
+  Object.keys(ROLES).forEach((r,i,arr)=>{
+    const node = document.createElement('span');
+    node.className = `role-node ${r===role?'active':isAncestor(r,role)?'ancestor':'inactive'}`;
+    node.innerHTML = `${r} <span class="role-level">${ROLES[r].level}</span>`;
+    chain.appendChild(node);
+    if(i<arr.length-1){const a=document.createElement('span');a.className='role-arrow';a.textContent='→';chain.appendChild(a);}
+  });
+  const acc=[];let cur=role;
+  while(cur){(ROLES[cur]?.globalDenyTags||[]).forEach(x=>{if(!acc.includes(x))acc.push(x)});cur=ROLES[cur]?.parent;}
+  tags.innerHTML='';
+  if(!acc.length){tags.innerHTML=`<div class="deny-tag-row none">✓ Nenhuma restrição global neste cargo</div>`;}
+  else acc.forEach(t=>{const d=document.createElement('div');d.className='deny-tag-row';d.innerHTML=`✗ tag <strong>${t}</strong> — bloqueada globalmente para este cargo`;tags.appendChild(d);});
+}
+
+function renderToolToggles() {
+  const list = document.getElementById('d-tool-toggles');
+  list.innerHTML='';
+  TOOLS.forEach(t=>{
+    const denied=draftDenials.has(t.name);
+    const c=TAG_COLORS[t.tag];
+    const row=document.createElement('div');
+    row.className=`tool-toggle-row ${denied?'denied':''}`;
+    row.innerHTML=`<span class="tt-name">${t.name}</span><span class="tt-tag" style="background:${c.bg};color:${c.text};border:1px solid ${c.border}">${t.tag}</span><div class="toggle-pill"></div>`;
+    row.onclick=()=>{
+      draftDenials.has(t.name)?draftDenials.delete(t.name):draftDenials.add(t.name);
+      row.classList.toggle('denied');
+      markDirty(); rebuildGraph(); resetSimulatorResults();
+    };
+    list.appendChild(row);
+  });
+}
+
+function renderAgentToggles() {
+  const list = document.getElementById('d-agent-toggles');
+  list.innerHTML='';
+  AGENTS.forEach(a=>{
+    const blocked=draftAgentDenials.has(a.name);
+    const row=document.createElement('div');
+    row.className=`agent-toggle-row ${blocked?'blocked':''}`;
+    row.innerHTML=`<span class="tt-name">${a.name}</span><span class="at-sector">${a.sector}</span><div class="toggle-pill"></div>`;
+    row.onclick=()=>{
+      draftAgentDenials.has(a.name)?draftAgentDenials.delete(a.name):draftAgentDenials.add(a.name);
+      row.classList.toggle('blocked');
+      markDirty(); rebuildGraph(); resetSimulatorResults();
+    };
+    list.appendChild(row);
+  });
+}
+
+function markDirty() {
+  isDirty=true; updateSaveHint();
+}
+
+function updateSaveHint() {
+  const hint=document.getElementById('save-hint');
+  const btn=document.getElementById('save-btn');
+  if(!isDirty){
+    hint.innerHTML='Nenhuma alteração pendente';
+    btn.style.opacity='.5'; btn.style.pointerEvents='none';
+  } else {
+    hint.innerHTML=`<span class="save-dot"></span>Alterações não salvas`;
+    btn.style.opacity='1'; btn.style.pointerEvents='auto';
+  }
+}
+
+function saveUser() {
+  if(!activeUser||!isDirty) return;
+  activeUser.role         = draftRole;
+  activeUser.userDenials  = [...draftDenials];
+  activeUser.agentDenials = [...draftAgentDenials];
+  isDirty=false; updateSaveHint(); renderTable();
+  showToast(`✓ ${activeUser.name} atualizado com sucesso`);
+  setTimeout(closeDrawer, 800);
+}
+
+// ═══════════════════════════════════════════
+// CANVAS — sim tab
+// ═══════════════════════════════════════════
+
+const simCanvas = document.getElementById('sim-gc');
+const sctx      = simCanvas.getContext('2d');
+let animT=0, animId=null;
+let GS={nodes:[],edges:[],activeIdx:-1};
+let CW=0;
+const CH=240;
+
+function initCanvas() {
+  const wrap = document.getElementById('sim-canvas-wrap');
+  const W = wrap.offsetWidth;
+  if(!W) return;
+  CW=W;
+  const dpr=window.devicePixelRatio||1;
+  simCanvas.width=W*dpr; simCanvas.height=CH*dpr;
+  simCanvas.style.width=W+'px'; simCanvas.style.height=CH+'px';
+  sctx.setTransform(dpr,0,0,dpr,0,0);
+  rebuildGraph();
+}
+
+function rebuildGraph() {
+  if(!CW||!activeUser) return;
+  const {nodes,edges}=buildGraph(draftRole,draftDenials,draftAgentDenials);
+  GS={nodes,edges,activeIdx:-1};
+  if(!animId) startAnim(); else drawGraph();
+  updateGraphStatus();
+}
+
+function updateGraphStatus() {
+  const agentBlocked=draftAgentDenials.has('agente_comercial');
+  const allowed=TOOLS.filter(t=>!draftDenials.has(t.name)&&!agentBlocked).length;
+  const denied=TOOLS.length-allowed;
+  const el=document.getElementById('sim-graph-status');
+  if(agentBlocked){el.textContent='agente bloqueado';el.className='tag tag-red';}
+  else if(denied>0){el.textContent=`${allowed} permitidas · ${denied} bloqueadas`;el.className='tag tag-yellow';}
+  else{el.textContent=`${allowed} permitidas`;el.className='tag tag-green';}
+}
+
+function buildGraph(role,uDenied,aDenied) {
+  const W=CW||500, H=CH;
+  const nodes=[],edges=[];
+  const roleNames=Object.keys(ROLES);
+  const hx=72,hy0=30,hyStep=(H-50)/roleNames.length;
+  roleNames.forEach((r,i)=>{
+    nodes.push({id:`role_${r}`,type:'role',label:r,level:ROLES[r].level,
+      x:hx,y:hy0+i*hyStep+hyStep/2,active:r===role,ancestor:isAncestor(r,role)});
+    if(i>0) edges.push({from:`role_${roleNames[i-1]}`,to:`role_${r}`,type:'hier'});
+  });
+  nodes.push({id:'policy',type:'engine',label:'Policy\nEngine',x:W*0.38,y:H/2});
+  edges.push({from:`role_${role}`,to:'policy',type:'active'});
+  const agentBlocked=aDenied.has('agente_comercial');
+  nodes.push({id:'agent',type:'agent',label:'Agente\nComercial',x:W*0.61,y:H/2,blocked:agentBlocked});
+  edges.push({from:'policy',to:'agent',type:agentBlocked?'deny':'allow_thick'});
+  const tx=W-76,ty0=14,tyStep=(H-28)/TOOLS.length;
+  TOOLS.forEach((tool,i)=>{
+    const allowed=!uDenied.has(tool.name)&&!agentBlocked;
+    nodes.push({id:`tool_${tool.name}`,type:'tool',label:tool.name,
+      x:tx,y:ty0+i*tyStep+tyStep/2,allowed,tag:tool.tag});
+    edges.push({from:'agent',to:`tool_${tool.name}`,type:allowed?'allow':'deny'});
+  });
+  return {nodes,edges};
+}
+
+function isAncestor(aR,tR) {
+  let cur=ROLES[tR]?.parent;
+  while(cur){if(cur===aR)return true;cur=ROLES[cur]?.parent;}
+  return false;
+}
+
+function getNode(id){return GS.nodes.find(n=>n.id===id);}
+
+function drawGraph() {
+  const W=CW||500,H=CH;
+  sctx.clearRect(0,0,W,H);
+  sctx.strokeStyle='#eceae4';sctx.lineWidth=.5;
+  for(let x=0;x<W;x+=24){sctx.beginPath();sctx.moveTo(x,0);sctx.lineTo(x,H);sctx.stroke();}
+  for(let y=0;y<H;y+=24){sctx.beginPath();sctx.moveTo(0,y);sctx.lineTo(W,y);sctx.stroke();}
+  GS.edges.forEach(e=>{
+    const from=getNode(e.from),to=getNode(e.to);
+    if(!from||!to)return;
+    const col={hier:'#d0cdc3',active:'#1a56db',allow_thick:'#9fe8c3',allow:'#9fe8c3',deny:'#f5b8b2',ctx:'#fad97a'}[e.type]||'#d0cdc3';
+    sctx.beginPath();sctx.strokeStyle=col;
+    sctx.lineWidth=['active','allow_thick'].includes(e.type)?2:1;
+    sctx.setLineDash(['active','allow_thick'].includes(e.type)?[5,4]:[]);
+    if(['active','allow_thick'].includes(e.type))sctx.lineDashOffset=-animT*.07;
+    const mx=(from.x+to.x)/2;
+    sctx.moveTo(from.x,from.y);sctx.bezierCurveTo(mx,from.y,mx,to.y,to.x,to.y);sctx.stroke();
+    sctx.setLineDash([]);
+    if(e.type!=='hier')arrow(to.x,to.y,from.x,from.y,col,e.type==='active'?2:1.5);
+  });
+  GS.nodes.forEach((n,i)=>{
+    const pulse=i===GS.activeIdx;
+    if(n.type==='role')drawRole(n,pulse);
+    else if(n.type==='engine')drawEngine(n,pulse);
+    else if(n.type==='agent')drawAgent(n,pulse);
+    else if(n.type==='tool')drawTool(n,pulse);
+  });
+}
+
+function arrow(tx,ty,fx,fy,col,lw){
+  const a=Math.atan2(ty-fy,tx-fx),l=6;
+  sctx.beginPath();sctx.strokeStyle=col;sctx.lineWidth=lw;
+  sctx.moveTo(tx-l*Math.cos(a-.4),ty-l*Math.sin(a-.4));
+  sctx.lineTo(tx,ty);
+  sctx.lineTo(tx-l*Math.cos(a+.4),ty-l*Math.sin(a+.4));
+  sctx.stroke();
+}
+
+function drawRole(n,pulse){
+  const r=15,al=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.globalAlpha=al;sctx.beginPath();sctx.arc(n.x,n.y,r,0,Math.PI*2);
+  if(n.active){sctx.fillStyle='#1a56db';sctx.fill();sctx.strokeStyle='#1547c0';sctx.lineWidth=2;sctx.stroke();}
+  else if(n.ancestor){sctx.fillStyle='#e8f0fe';sctx.fill();sctx.strokeStyle='#bfdbfe';sctx.lineWidth=1.5;sctx.stroke();}
+  else{sctx.fillStyle='#fafaf8';sctx.fill();sctx.strokeStyle='#d0cdc3';sctx.lineWidth=1;sctx.stroke();}
+  sctx.globalAlpha=1;
+  sctx.fillStyle=n.active?'#fff':(n.ancestor?'#1a56db':'#a8a49c');
+  sctx.font=`${n.active?'600':'400'} 9px IBM Plex Mono,monospace`;
+  sctx.textAlign='center';sctx.textBaseline='middle';
+  sctx.fillText(String(n.level),n.x,n.y);
+  sctx.fillStyle=n.active?'#1a1916':(n.ancestor?'#1a56db':'#a8a49c');
+  sctx.font=`${n.active?'600':'400'} 10px IBM Plex Sans,sans-serif`;
+  sctx.textAlign='left';sctx.fillText(n.label,n.x+r+4,n.y);
+}
+
+function drawEngine(n,pulse){
+  const w=68,h=34,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);sctx.fillStyle='#1a1916';sctx.fill();
+  sctx.globalAlpha=1;sctx.fillStyle='#fff';
+  sctx.font='600 10px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
+}
+
+function drawAgent(n,pulse){
+  const w=72,h=36,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);
+  if(n.blocked){sctx.fillStyle='#fdf0ee';sctx.fill();sctx.strokeStyle='#f5b8b2';sctx.lineWidth=1.5;sctx.stroke();}
+  else{sctx.fillStyle='#e8f7f0';sctx.fill();sctx.strokeStyle='#9fe8c3';sctx.lineWidth=1.5;sctx.stroke();}
+  sctx.globalAlpha=1;sctx.fillStyle=n.blocked?'#c0392b':'#0f7b44';
+  sctx.font='600 10px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
+}
+
+function drawTool(n,pulse){
+  const w=84,h=18,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,4);
+  if(n.allowed){sctx.fillStyle='#e8f7f0';sctx.fill();sctx.strokeStyle='#9fe8c3';}
+  else{sctx.fillStyle='#fdf0ee';sctx.fill();sctx.strokeStyle='#f5b8b2';}
+  sctx.lineWidth=1;sctx.stroke();
+  sctx.globalAlpha=1;sctx.fillStyle=n.allowed?'#0f7b44':'#c0392b';
+  sctx.font='500 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  let lbl=n.label;if(lbl.length>13)lbl=lbl.slice(0,12)+'…';
+  sctx.fillText(lbl,n.x,n.y);
+}
+
+function rr(x,y,w,h,r){
+  sctx.moveTo(x+r,y);sctx.lineTo(x+w-r,y);sctx.arcTo(x+w,y,x+w,y+r,r);
+  sctx.lineTo(x+w,y+h-r);sctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  sctx.lineTo(x+r,y+h);sctx.arcTo(x,y+h,x,y+h-r,r);
+  sctx.lineTo(x,y+r);sctx.arcTo(x,y,x+r,y,r);sctx.closePath();
+}
+
+function startAnim(){
+  if(animId)cancelAnimationFrame(animId);
+  function loop(){animT++;drawGraph();animId=requestAnimationFrame(loop);}
+  loop();
+}
+function stopAnim(){
+  if(animId){cancelAnimationFrame(animId);animId=null;}
+}
+
+// ═══════════════════════════════════════════
+// SIMULATOR TRACE
+// ═══════════════════════════════════════════
+
+function resetSimulator() {
+  resetSimulatorResults();
+  document.getElementById('sim-run-hint').textContent='Clique em Executar para ver o trace completo das decisões IAM.';
+}
+
+function resetSimulatorResults() {
+  document.getElementById('trace-list').innerHTML='';
+  document.getElementById('trace-empty').style.display='block';
+  updateGraphStatus();
+}
+
+async function runSimulation() {
+  if(!activeUser) return;
+  const btn=document.getElementById('sim-run-btn');
+  btn.disabled=true; btn.textContent='⏳ Executando…';
+  document.getElementById('trace-list').innerHTML='';
+  document.getElementById('trace-empty').style.display='none';
+
+  const role=draftRole;
+  const agentBlocked=draftAgentDenials.has('agente_comercial');
+
+  // Step 1 — identity
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id===`role_${role}`);
+  await strace({step:'1',type:'info',label:'Identity Registry',
+    desc:`Usuário <code>${activeUser.email}</code> mapeado. Canal: <code>${activeUser.channel}</code>`});
+
+  // Step 2 — role
+  await strace({step:'2',type:'info',label:`Cargo resolvido: ${role}`,
+    desc:`Access level <code>${ROLES[role]?.level}</code>. Percorrendo hierarquia para acumular deny_tags.`});
+
+  const chain=[];let cur=role;
+  while(cur){chain.unshift(cur);cur=ROLES[cur]?.parent;}
+  for(const r of chain){
+    const tags=ROLES[r]?.globalDenyTags||[];
+    if(tags.length) await strace({step:'↳',type:'warn',label:`role_denials @ ${r}`,
+      desc:`Tags bloqueadas: ${tags.map(t=>`<code>${t}</code>`).join(', ')}`},120);
+  }
+
+  // Step 3 — user_denials
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='policy');
+  if(draftDenials.size>0){
+    await strace({step:'3',type:'fail',label:'user_denials encontradas',
+      desc:`Exceções: ${[...draftDenials].map(t=>`<code>${t}</code>`).join(', ')}`});
+  } else {
+    await strace({step:'3',type:'ok',label:'user_denials: nenhuma',desc:'Sem exceções individuais para este usuário.'});
+  }
+
+  // Step 4 — agent
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='agent');
+  if(agentBlocked){
+    await strace({step:'4',type:'fail',label:'agente_comercial BLOQUEADO',
+      desc:'Não está em <code>available_agents[]</code>. Nenhuma tool avaliada.'});
+    for(let i=0;i<TOOLS.length;i++){
+      GS.activeIdx=GS.nodes.findIndex(n=>n.id===`tool_${TOOLS[i].name}`);
+      await strace({step:'✗',type:'fail',label:TOOLS[i].name,
+        desc:'Não avaliada — agente bloqueado.',result:'deny'},50);
+    }
+  } else {
+    await strace({step:'4',type:'ok',label:'agente_comercial disponível',
+      desc:'Presente em <code>available_agents[]</code>. Avaliando tools.'});
+    for(let i=0;i<TOOLS.length;i++){
+      const t=TOOLS[i];
+      GS.activeIdx=GS.nodes.findIndex(n=>n.id===`tool_${t.name}`);
+      const denied=draftDenials.has(t.name);
+      await strace({step:denied?'✗':'✓',type:denied?'fail':'ok',label:t.name,
+        desc:denied?`user_denial explícito`:`permitida · tag <code>${t.tag}</code>`,
+        result:denied?'deny':'allow'},80);
+    }
+  }
+  GS.activeIdx=-1;
+
+  const allowed=TOOLS.filter(t=>!draftDenials.has(t.name)&&!agentBlocked).length;
+  document.getElementById('sim-run-hint').textContent=`Trace concluído · ${allowed} tools permitidas · ${TOOLS.length-allowed} bloqueadas`;
+  btn.disabled=false; btn.textContent='▶ Executar trace';
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function strace({step,type,label,desc,result},ms=250){
+  await delay(ms);
+  const list=document.getElementById('trace-list');
+  const item=document.createElement('div');
+  item.className='trace-item';
+  const rb=result==='allow'?`<span class="trace-badge tb-allow">PERMITIDA</span>`
+          :result==='deny'?`<span class="trace-badge tb-deny">BLOQUEADA</span>`:'';
+  item.innerHTML=`
+    <div class="trace-step step-${type==='ok'?'ok':type==='fail'?'fail':type==='warn'?'warn':'info'}">${step}</div>
+    <div class="trace-body">
+      <div class="trace-label">${label}</div>
+      <div class="trace-desc">${desc}</div>
+    </div>${rb}`;
+  list.appendChild(item);
+  item.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ═══════════════════════════════════════════
+// MISC
+// ═══════════════════════════════════════════
+
+function setNav(el){
+  document.querySelectorAll('.sidebar-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+let toastTimer;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),2400);
+}
+
+// Boot
+renderTable();
+</script>
+</body>
+</html>
