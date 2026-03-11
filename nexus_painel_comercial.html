@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus — Painel · Setor Comercial</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f4f0;
+  --panel: #ffffff;
+  --panel2: #fafaf8;
+  --border: #e2e0d8;
+  --border2: #d0cdc3;
+  --text: #1a1916;
+  --muted: #6b6860;
+  --dim: #a8a49c;
+  --accent: #1a56db;
+  --accent-s: #e8f0fe;
+  --green: #0f7b44;
+  --green-s: #e8f7f0;
+  --green-b: #9fe8c3;
+  --red: #c0392b;
+  --red-s: #fdf0ee;
+  --red-b: #f5b8b2;
+  --yellow: #a05c00;
+  --yellow-s: #fef8e7;
+  --yellow-b: #fad97a;
+  --purple: #6d28d9;
+  --purple-s: #f5f3ff;
+  --purple-b: #c4b5fd;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.07), 0 4px 12px rgba(0,0,0,.04);
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:var(--sans); background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; }
+
+/* ── Shell ── */
+.app { display:grid; grid-template-columns:260px 1fr; grid-template-rows:52px 1fr; min-height:100vh; }
+
+/* ── Topbar ── */
+.topbar {
+  grid-column:1/-1; background:var(--panel); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:14px; padding:0 20px;
+}
+.topbar-logo { font-family:var(--mono); font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:8px; }
+.logo-dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+.topbar-sep { flex:1; }
+.topbar-sector {
+  font-family:var(--mono); font-size:11px; padding:3px 10px;
+  background:var(--yellow-s); color:var(--yellow); border-radius:20px;
+  font-weight:600; border:1px solid var(--yellow-b);
+}
+.topbar-badge {
+  font-family:var(--mono); font-size:11px; padding:3px 10px;
+  background:var(--accent-s); color:var(--accent); border-radius:20px; font-weight:500;
+}
+.topbar-search {
+  display:flex; align-items:center; gap:8px; background:var(--panel2);
+  border:1px solid var(--border2); border-radius:6px; padding:6px 12px;
+  font-size:12px; color:var(--dim); font-family:var(--mono); width:190px;
+}
+.topbar-avatar {
+  width:28px; height:28px; border-radius:50%; background:#1a1916;
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:#fff; font-family:var(--mono); flex-shrink:0;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  background:var(--panel); border-right:1px solid var(--border);
+  overflow-y:auto; display:flex; flex-direction:column;
+}
+.sidebar-top { padding:16px 20px 12px; border-bottom:1px solid var(--border); }
+.sector-badge {
+  display:flex; align-items:center; gap:8px; padding:9px 12px;
+  background:var(--yellow-s); border:1px solid var(--yellow-b); border-radius:8px;
+}
+.sector-icon { font-size:16px; }
+.sector-name { font-size:13px; font-weight:600; color:var(--yellow); }
+.sector-sub  { font-size:10px; color:var(--yellow); opacity:.7; font-family:var(--mono); }
+
+.nav-group { padding:12px 0 4px; }
+.nav-label { font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.07em; padding:4px 20px 6px; }
+.nav-link {
+  display:flex; align-items:center; gap:9px; padding:8px 20px;
+  font-size:13px; color:var(--muted); cursor:pointer; transition:all .12s;
+  border-left:2px solid transparent; user-select:none;
+}
+.nav-link:hover { background:var(--panel2); color:var(--text); }
+.nav-link.active { background:var(--accent-s); color:var(--accent); border-left-color:var(--accent); font-weight:500; }
+.nav-link svg { width:14px; height:14px; flex-shrink:0; opacity:.6; }
+.nav-link.active svg { opacity:1; }
+.nav-count {
+  margin-left:auto; font-family:var(--mono); font-size:10px;
+  padding:1px 6px; border-radius:10px;
+  background:var(--panel2); border:1px solid var(--border); color:var(--dim);
+}
+.nav-link.active .nav-count { background:var(--accent); color:#fff; border-color:var(--accent); }
+.nav-count.alert { background:var(--red-s); color:var(--red); border-color:var(--red-b); }
+
+/* ── Content ── */
+.main { overflow-y:auto; display:flex; flex-direction:column; }
+.screen { display:none; flex-direction:column; gap:20px; padding:24px; }
+.screen.active { display:flex; }
+
+/* ── Page header ── */
+.page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+.page-title { font-size:20px; font-weight:700; letter-spacing:-.02em; margin-bottom:3px; }
+.page-desc  { font-size:13px; color:var(--muted); }
+.btn-row { display:flex; gap:8px; flex-shrink:0; }
+.btn {
+  display:inline-flex; align-items:center; gap:6px; padding:8px 14px;
+  border-radius:6px; font-size:13px; font-weight:500; cursor:pointer; border:none;
+  transition:background .15s, transform .1s; font-family:var(--sans); white-space:nowrap;
+}
+.btn:active { transform:scale(.98); }
+.btn-primary { background:var(--accent); color:#fff; }
+.btn-primary:hover { background:#1547c0; }
+.btn-ghost { background:var(--panel); border:1px solid var(--border2); color:var(--muted); }
+.btn-ghost:hover { border-color:var(--border); color:var(--text); background:var(--panel2); }
+
+/* ── Cards ── */
+.card { background:var(--panel); border:1px solid var(--border); border-radius:12px; overflow:hidden; box-shadow:var(--shadow); }
+.card-head {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+}
+.card-title { font-size:13px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:7px; }
+.card-sub   { font-size:11px; color:var(--dim); font-family:var(--mono); margin-top:1px; }
+
+/* ── Stats ── */
+.stats-row   { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.stats-row-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.stat-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:12px;
+  padding:18px 20px; box-shadow:var(--shadow);
+}
+.stat-label { font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; font-family:var(--mono); }
+.stat-num   { font-size:28px; font-weight:600; font-family:var(--mono); letter-spacing:-.03em; line-height:1; margin-bottom:6px; }
+.stat-sub   { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:5px; }
+
+/* ── Tags ── */
+.tag { display:inline-flex; align-items:center; font-family:var(--mono); font-size:10px; font-weight:500; padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.tag-green  { background:var(--green-s);  color:var(--green);  border:1px solid var(--green-b); }
+.tag-red    { background:var(--red-s);    color:var(--red);    border:1px solid var(--red-b); }
+.tag-yellow { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.tag-blue   { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.tag-gray   { background:var(--panel2);   color:var(--dim);    border:1px solid var(--border); }
+.tag-purple { background:var(--purple-s); color:var(--purple); border:1px solid var(--purple-b); }
+
+/* ── Table ── */
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+thead { background:var(--panel2); }
+th { padding:9px 16px; text-align:left; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--dim); border-bottom:1px solid var(--border); white-space:nowrap; font-family:var(--mono); }
+td { padding:10px 16px; border-bottom:1px solid var(--border); font-size:13px; color:var(--muted); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--panel2); }
+
+/* ── Avatar ── */
+.avatar { width:28px; height:28px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; font-family:var(--mono); }
+
+/* ── Status dot ── */
+.status-dot { display:inline-flex; align-items:center; gap:5px; font-size:12px; }
+.dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.dot-green  { background:var(--green); }
+.dot-red    { background:var(--red); }
+.dot-yellow { background:#d97706; }
+.dot-gray   { background:var(--dim); }
+
+/* ── Row btn ── */
+.row-btn { font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:4px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:all .12s; }
+.row-btn:hover { border-color:var(--border2); color:var(--text); background:var(--panel2); }
+
+/* ── Activity ── */
+.activity-item { display:flex; gap:12px; padding:12px 20px; align-items:flex-start; border-bottom:1px solid var(--border); animation:fadeSlide .25s ease both; }
+.activity-item:last-child { border-bottom:none; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:none} }
+.act-icon { width:28px; height:28px; border-radius:8px; flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.icon-tool  { background:var(--accent-s); border:1px solid #bfdbfe; }
+.icon-allow { background:var(--green-s);  border:1px solid var(--green-b); }
+.icon-deny  { background:var(--red-s);    border:1px solid var(--red-b); }
+.icon-doc   { background:var(--yellow-s); border:1px solid var(--yellow-b); }
+.icon-wa    { background:var(--green-s);  border:1px solid var(--green-b); }
+.act-label { font-size:12px; font-weight:600; color:var(--text); margin-bottom:2px; }
+.act-desc  { font-size:12px; color:var(--muted); line-height:1.5; }
+.act-time  { font-family:var(--mono); font-size:10px; color:var(--dim); flex-shrink:0; padding-top:3px; margin-left:auto; }
+code { font-family:var(--mono); font-size:11px; background:var(--panel2); border:1px solid var(--border); padding:1px 5px; border-radius:3px; color:var(--text); }
+
+/* ── Agent card ── */
+.agent-card {
+  background:var(--panel); border:1px solid var(--border); border-radius:12px;
+  overflow:hidden; box-shadow:var(--shadow);
+}
+.agent-head {
+  padding:18px 20px; border-bottom:1px solid var(--border);
+  display:flex; align-items:flex-start; gap:14px;
+}
+.agent-icon {
+  width:40px; height:40px; border-radius:10px; background:#1a1916;
+  display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0;
+}
+.agent-name { font-size:15px; font-weight:700; color:var(--text); margin-bottom:3px; letter-spacing:-.01em; }
+.agent-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+.agent-meta { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+
+/* ── Tool items ── */
+.tool-list { padding:4px 0; }
+.tool-item {
+  display:flex; align-items:center; gap:12px; padding:11px 20px;
+  border-bottom:1px solid var(--border); transition:background .12s;
+}
+.tool-item:last-child { border-bottom:none; }
+.tool-item:hover { background:var(--panel2); }
+.tool-bullet {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.tool-name { font-family:var(--mono); font-size:12px; font-weight:500; color:var(--text); min-width:200px; }
+.tool-desc { font-size:12px; color:var(--muted); flex:1; }
+.tool-badges { display:flex; gap:5px; flex-shrink:0; }
+.tool-calls { font-family:var(--mono); font-size:11px; color:var(--dim); flex-shrink:0; min-width:80px; text-align:right; }
+
+/* ── Deny toggles ── */
+.deny-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:8px 11px; background:var(--panel2); border:1px solid var(--border);
+  border-radius:6px; cursor:pointer; transition:all .15s; user-select:none; margin-bottom:4px;
+}
+.deny-row:hover { border-color:var(--border2); background:#f0ede6; }
+.deny-row.active-deny { background:var(--red-s); border-color:var(--red-b); }
+.deny-row.active-deny .deny-name { color:var(--red); }
+.deny-name { font-family:var(--mono); font-size:12px; color:var(--muted); font-weight:500; }
+.deny-toggle { width:32px; height:18px; border-radius:9px; background:var(--border2); position:relative; transition:background .2s; flex-shrink:0; }
+.deny-toggle::after { content:''; position:absolute; width:12px; height:12px; border-radius:50%; background:#fff; top:3px; left:3px; transition:transform .2s; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+.deny-row.active-deny .deny-toggle { background:var(--red); }
+.deny-row.active-deny .deny-toggle::after { transform:translateX(14px); }
+
+/* ── Filter bar ── */
+.filter-bar { display:flex; gap:6px; padding:12px 20px; border-bottom:1px solid var(--border); flex-wrap:wrap; align-items:center; }
+.filter-chip { font-family:var(--mono); font-size:11px; padding:4px 10px; border-radius:4px; border:1px solid var(--border); background:var(--panel2); color:var(--muted); cursor:pointer; transition:all .12s; }
+.filter-chip:hover { border-color:var(--border2); color:var(--text); }
+.filter-chip.active { background:var(--accent-s); border-color:var(--accent); color:var(--accent); }
+.filter-sep { flex:1; }
+.filter-input { font-family:var(--mono); font-size:11px; padding:5px 10px; border-radius:4px; border:1px solid var(--border); background:var(--panel2); color:var(--text); outline:none; width:200px; transition:border-color .15s; }
+.filter-input:focus { border-color:var(--accent); }
+
+/* ── Audit row ── */
+.audit-row { display:flex; gap:12px; padding:10px 20px; align-items:center; border-bottom:1px solid var(--border); font-size:12px; animation:fadeSlide .2s ease both; }
+.audit-row:last-child { border-bottom:none; }
+.audit-row:hover { background:var(--panel2); }
+.audit-decision { font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 8px; border-radius:3px; flex-shrink:0; min-width:68px; text-align:center; }
+.audit-user   { min-width:150px; }
+.audit-tool   { font-family:var(--mono); font-size:11px; color:var(--muted); min-width:190px; }
+.audit-reason { font-size:11px; color:var(--dim); flex:1; }
+.audit-time   { font-family:var(--mono); font-size:10px; color:var(--dim); flex-shrink:0; }
+.audit-channel { flex-shrink:0; }
+
+/* ── Summary bar ── */
+.summary-bar { display:flex; border-bottom:1px solid var(--border); }
+.summary-item { display:flex; align-items:center; gap:10px; padding:14px 20px; border-right:1px solid var(--border); }
+.summary-item:last-child { border-right:none; }
+.summary-num   { font-family:var(--mono); font-size:22px; font-weight:600; }
+.summary-label { font-size:12px; color:var(--dim); line-height:1.4; }
+
+/* ── Progress ── */
+.progress-bar  { height:6px; background:var(--panel2); border-radius:3px; border:1px solid var(--border); overflow:hidden; flex:1; }
+.progress-fill { height:100%; background:var(--accent); border-radius:3px; transition:width .4s ease; }
+
+/* ── Edit overlay ── */
+.edit-overlay { position:fixed; inset:0; background:rgba(26,25,22,.35); z-index:100; display:none; align-items:flex-start; justify-content:flex-end; }
+.edit-overlay.open { display:flex; }
+.edit-panel { background:var(--panel); height:100vh; width:420px; box-shadow:-4px 0 24px rgba(0,0,0,.12); display:flex; flex-direction:column; overflow:hidden; margin-top:52px; }
+.edit-head { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.edit-title { font-size:14px; font-weight:600; color:var(--text); }
+.edit-close { width:28px; height:28px; border-radius:6px; border:1px solid var(--border); background:var(--panel2); display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; color:var(--muted); transition:all .12s; line-height:1; }
+.edit-close:hover { background:var(--red-s); color:var(--red); border-color:var(--red-b); }
+.edit-body { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:14px; }
+.edit-footer { padding:16px 20px; border-top:1px solid var(--border); display:flex; gap:8px; }
+.field label { display:block; font-size:11px; font-weight:600; color:var(--muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:.05em; }
+.field input, .field select { width:100%; padding:8px 11px; border:1px solid var(--border2); border-radius:6px; font-family:var(--sans); font-size:13px; color:var(--text); background:var(--panel2); outline:none; transition:border-color .15s, box-shadow .15s; }
+.field input:focus, .field select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(26,86,219,.08); }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.edit-sec { font-size:10px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.07em; padding-bottom:8px; border-bottom:1px solid var(--border); }
+
+/* ── Tabs ── */
+.tabs { display:flex; }
+.tab { padding:9px 16px; font-size:13px; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .12s; margin-bottom:-1px; }
+.tab:hover { color:var(--text); }
+.tab.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:500; }
+
+/* ── Cargo badge colors ── */
+.cargo-diretor     { background:var(--yellow-s); color:var(--yellow); border:1px solid var(--yellow-b); }
+.cargo-gerente     { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.cargo-vendedor    { background:var(--panel2);   color:var(--muted);  border:1px solid var(--border); }
+
+/* ── Channel pill ── */
+.channel-pill { display:inline-flex; align-items:center; gap:4px; font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:10px; }
+.ch-web { background:var(--accent-s); color:var(--accent); border:1px solid #bfdbfe; }
+.ch-wa  { background:var(--green-s);  color:var(--green);  border:1px solid var(--green-b); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-logo"><div class="logo-dot"></div>Nexus</div>
+    <span style="font-size:12px;color:var(--dim);font-family:var(--mono)">/ painel de gerenciamento</span>
+    <div class="topbar-sep"></div>
+    <div class="topbar-search">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/></svg>
+      buscar...
+    </div>
+    <span class="topbar-sector">● Comercial</span>
+    <span class="topbar-badge">admin</span>
+    <div class="topbar-avatar">A</div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sector-badge">
+        <div class="sector-icon">📊</div>
+        <div>
+          <div class="sector-name">Setor Comercial</div>
+          <div class="sector-sub">1 agente · 5 tools · 8 usuários</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Visão Geral</div>
+      <div class="nav-link active" onclick="nav('dashboard')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Identidade</div>
+      <div class="nav-link" onclick="nav('usuarios')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="4.5" r="2.5"/><path d="M2 12c0-2.76 2.24-4.5 5-4.5s5 1.74 5 4.5"/></svg>
+        Usuários
+        <span class="nav-count">8</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Sistema</div>
+      <div class="nav-link" onclick="nav('agente')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="5.5"/><path d="M7 4.5v3l2 1.5"/></svg>
+        Agente Comercial
+      </div>
+      <div class="nav-link" onclick="nav('ferramentas')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 2a3 3 0 0 0-2.96 3.5L1.5 10l.9 2.6 2.6-.9L9.46 7.5A3 3 0 1 0 9 2z"/></svg>
+        Ferramentas
+        <span class="nav-count">5</span>
+      </div>
+      <div class="nav-link" onclick="nav('cargos')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1v2.5M4.5 3.5L6.2 5.2M9.5 3.5L7.8 5.2"/><circle cx="7" cy="7" r="1.8"/><circle cx="2" cy="5.5" r="1.3"/><circle cx="12" cy="5.5" r="1.3"/><circle cx="7" cy="12" r="1.3"/><path d="M3.2 6.6L5 8.5M10.8 6.6L9 8.5M7 8.8v1.9"/></svg>
+        Cargos & Acesso
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Monitoramento</div>
+      <div class="nav-link" onclick="nav('auditoria')">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h10M2 7h8M2 10.5h5"/></svg>
+        Auditoria
+        <span class="nav-count alert">2</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ═══════════════ DASHBOARD ═══════════════ -->
+    <div class="screen active" id="s-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-desc">Setor Comercial — atividade e saúde do Agente Comercial</div>
+        </div>
+        <button class="btn btn-ghost">↓ Exportar</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-label">Usuários Ativos</div>
+          <div class="stat-num">8</div>
+          <div class="stat-sub">
+            <span class="tag tag-gray" style="font-size:9px">3 cargos</span>
+            <span class="tag tag-green" style="font-size:9px">7 online</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Chamadas ao Agente</div>
+          <div class="stat-num">143</div>
+          <div class="stat-sub"><span class="tag tag-blue">hoje</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Propostas Geradas</div>
+          <div class="stat-num">31</div>
+          <div class="stat-sub">
+            <span class="status-dot"><span class="dot dot-green"></span>via web: 22</span>
+            &nbsp;·&nbsp;
+            <span class="status-dot"><span class="dot dot-green"></span>via WA: 9</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tokens (semana)</div>
+          <div class="stat-num">84k</div>
+          <div class="stat-sub"><span class="tag tag-blue">↑ 18% vs anterior</span></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 360px;gap:16px;">
+
+        <!-- Activity -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Atividade Recente</div>
+              <div class="card-sub">interações com o Agente Comercial</div>
+            </div>
+            <span class="tag tag-gray">ao vivo</span>
+          </div>
+          <div>
+            <div class="activity-item" style="animation-delay:0ms">
+              <div class="act-icon icon-doc">📄</div>
+              <div style="flex:1">
+                <div class="act-label">Proposta gerada — Cliente Fábrica Noroeste Ltda</div>
+                <div class="act-desc">carlos.mendes@empresa.com · Vendedor · <code>generate_proposal</code> + <code>mcp_query</code> + <code>knowledge_base_search</code></div>
+              </div>
+              <div class="act-time">10:02</div>
+            </div>
+            <div class="activity-item" style="animation-delay:40ms">
+              <div class="act-icon icon-tool">🔍</div>
+              <div style="flex:1">
+                <div class="act-label">Consulta ERP — pedidos em aberto</div>
+                <div class="act-desc">fernanda.rocha@empresa.com · Gerente · <code>mcp_query</code> · pipeline do setor</div>
+              </div>
+              <div class="act-time">09:51</div>
+            </div>
+            <div class="activity-item" style="animation-delay:80ms">
+              <div class="act-icon icon-wa">💬</div>
+              <div style="flex:1">
+                <div class="act-label">Proposta via WhatsApp — Distribuidora Sul</div>
+                <div class="act-desc">rafael.lima@empresa.com · Vendedor · canal WA · proposta condensada enviada</div>
+              </div>
+              <div class="act-time">09:44</div>
+            </div>
+            <div class="activity-item" style="animation-delay:120ms">
+              <div class="act-icon icon-tool">📍</div>
+              <div style="flex:1">
+                <div class="act-label">Validação de endereço — CEP 04571-010</div>
+                <div class="act-desc">carlos.mendes@empresa.com · Vendedor · <code>get_address_from_cep</code> · São Paulo, SP</div>
+              </div>
+              <div class="act-time">09:38</div>
+            </div>
+            <div class="activity-item" style="animation-delay:160ms">
+              <div class="act-icon icon-tool">🌐</div>
+              <div style="flex:1">
+                <div class="act-label">Pesquisa de mercado — concorrentes região Sul</div>
+                <div class="act-desc">diretor.comercial@empresa.com · Diretor · <code>web_search</code> · análise competitiva</div>
+              </div>
+              <div class="act-time">09:22</div>
+            </div>
+            <div class="activity-item" style="animation-delay:200ms">
+              <div class="act-icon icon-deny">✗</div>
+              <div style="flex:1">
+                <div class="act-label">Acesso negado — tentativa fora do setor</div>
+                <div class="act-desc">joao.santos@empresa.com · Vendedor · agente fora do escopo comercial bloqueado</div>
+              </div>
+              <div class="act-time">09:11</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right col -->
+        <div style="display:flex;flex-direction:column;gap:12px;">
+
+          <!-- Tools usage -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">Uso de Ferramentas</div></div>
+            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:9px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:130px">mcp_query</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:78%"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:30px;text-align:right">78%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:130px">generate_proposal</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:62%;opacity:.85"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:30px;text-align:right">62%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:130px">knowledge_base</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:55%;opacity:.7"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:30px;text-align:right">55%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:130px">web_search</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:34%;opacity:.55"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:30px;text-align:right">34%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-family:var(--mono);font-size:11px;color:var(--muted);min-width:130px">get_address_from_cep</span>
+                <div class="progress-bar"><div class="progress-fill" style="width:18%;opacity:.45"></div></div>
+                <span style="font-family:var(--mono);font-size:11px;color:var(--dim);min-width:30px;text-align:right">18%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Canais -->
+          <div class="card">
+            <div class="card-head"><div class="card-title">Canais</div></div>
+            <div style="padding:14px 20px;display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="status-dot" style="font-size:13px;font-weight:500;color:var(--text)"><span class="dot dot-green"></span>Web (Metas)</span>
+                <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:var(--mono);font-size:11px;color:var(--dim)">6 sessões</span><span class="tag tag-green">online</span></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <span class="status-dot" style="font-size:13px;font-weight:500;color:var(--text)"><span class="dot dot-green"></span>WhatsApp (n8n)</span>
+                <div style="display:flex;align-items:center;gap:6px;"><span style="font-family:var(--mono);font-size:11px;color:var(--dim)">5 vínculos</span><span class="tag tag-green">online</span></div>
+              </div>
+              <div style="height:1px;background:var(--border)"></div>
+              <div style="font-size:11px;color:var(--dim);font-family:var(--mono)">Output formatter ativo · canal detectado via JWT <code>channel</code></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ USUÁRIOS ═══════════════ -->
+    <div class="screen" id="s-usuarios">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Usuários</div>
+          <div class="page-desc">8 usuários no Setor Comercial — 3 cargos, sem deny list interna</div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost">↓ Exportar</button>
+          <button class="btn btn-primary">+ Adicionar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head" style="padding:0;">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 20px 0;border-bottom:1px solid var(--border);">
+            <div class="tabs">
+              <div class="tab active">Todos <span style="opacity:.5;margin-left:4px">8</span></div>
+              <div class="tab">WA Vinculado <span style="opacity:.5;margin-left:4px">5</span></div>
+              <div class="tab">Com exceção <span style="opacity:.5;margin-left:4px">1</span></div>
+            </div>
+            <select style="font-family:var(--mono);font-size:11px;padding:5px 9px;border-radius:4px;border:1px solid var(--border);background:var(--panel2);color:var(--muted);margin-bottom:4px;">
+              <option>Todos os cargos</option>
+              <option>Diretor</option><option>Gerente Comercial</option><option>Vendedor/SDR</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Cargo</th>
+                <th>Canal</th>
+                <th>Acesso ao Agente</th>
+                <th>Exceções individuais</th>
+                <th>Status</th>
+                <th>Último acesso</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#1a1916">D</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Dir. Comercial</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">diretor.comercial@empresa.com</div></div></div></td>
+                <td><span class="tag cargo-diretor">Diretor</span></td>
+                <td><div style="display:flex;gap:4px"><span class="channel-pill ch-web">web</span></div></td>
+                <td><span class="tag tag-green">Agente Comercial</span></td>
+                <td><span class="tag tag-gray">nenhuma</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 38min</td>
+                <td><button class="row-btn" onclick="openEdit('Dir. Comercial','diretor.comercial@empresa.com','Diretor')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#1a56db">F</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Fernanda Rocha</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">fernanda.rocha@empresa.com</div></div></div></td>
+                <td><span class="tag cargo-gerente">Gerente Comercial</span></td>
+                <td><div style="display:flex;gap:4px"><span class="channel-pill ch-web">web</span><span class="channel-pill ch-wa">wa</span></div></td>
+                <td><span class="tag tag-green">Agente Comercial</span></td>
+                <td><span class="tag tag-gray">nenhuma</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 9min</td>
+                <td><button class="row-btn" onclick="openEdit('Fernanda Rocha','fernanda.rocha@empresa.com','Gerente Comercial')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#0f7b44">C</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Carlos Mendes</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">carlos.mendes@empresa.com</div></div></div></td>
+                <td><span class="tag cargo-vendedor">Vendedor/SDR</span></td>
+                <td><div style="display:flex;gap:4px"><span class="channel-pill ch-web">web</span><span class="channel-pill ch-wa">wa</span></div></td>
+                <td><span class="tag tag-green">Agente Comercial</span></td>
+                <td><span class="tag tag-gray">nenhuma</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 2min</td>
+                <td><button class="row-btn" onclick="openEdit('Carlos Mendes','carlos.mendes@empresa.com','Vendedor/SDR')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#7c3aed">R</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">Rafael Lima</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">rafael.lima@empresa.com</div></div></div></td>
+                <td><span class="tag cargo-vendedor">Vendedor/SDR</span></td>
+                <td><div style="display:flex;gap:4px"><span class="channel-pill ch-web">web</span><span class="channel-pill ch-wa">wa</span></div></td>
+                <td><span class="tag tag-green">Agente Comercial</span></td>
+                <td><span class="tag tag-gray">nenhuma</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 16min</td>
+                <td><button class="row-btn" onclick="openEdit('Rafael Lima','rafael.lima@empresa.com','Vendedor/SDR')">editar</button></td>
+              </tr>
+              <tr>
+                <td><div style="display:flex;align-items:center;gap:9px"><div class="avatar" style="background:#a05c00">J</div><div><div style="font-size:13px;font-weight:500;color:var(--text)">João Santos</div><div style="font-size:11px;font-family:var(--mono);color:var(--dim)">joao.santos@empresa.com</div></div></div></td>
+                <td><span class="tag cargo-vendedor">Vendedor/SDR</span></td>
+                <td><div style="display:flex;gap:4px"><span class="channel-pill ch-web">web</span></div></td>
+                <td><span class="tag tag-green">Agente Comercial</span></td>
+                <td><span class="tag tag-red">web_search bloqueado</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativo</div></td>
+                <td style="font-family:var(--mono);font-size:11px;color:var(--dim)">há 49min</td>
+                <td><button class="row-btn" onclick="openEdit('João Santos','joao.santos@empresa.com','Vendedor/SDR')">editar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ AGENTE ═══════════════ -->
+    <div class="screen" id="s-agente">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Agente Comercial</div>
+          <div class="page-desc">Configuração, tools injetadas e comportamento por canal</div>
+        </div>
+        <span class="tag tag-green" style="font-size:12px;padding:5px 12px">● online</span>
+      </div>
+
+      <!-- Agent card -->
+      <div class="agent-card">
+        <div class="agent-head">
+          <div class="agent-icon">🤝</div>
+          <div style="flex:1">
+            <div class="agent-name">agente_comercial</div>
+            <div class="agent-desc">Consulta ERP, pesquisa web e base de conhecimento para gerar propostas comerciais formatadas. Adapta output por canal (web: markdown completo · WA: texto condensado).</div>
+            <div class="agent-meta">
+              <span class="tag tag-green">ativo</span>
+              <span class="tag tag-gray">supervisor → agente_comercial</span>
+              <span class="tag tag-blue">web + whatsapp</span>
+              <span class="tag tag-purple">output formatter</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:var(--mono);font-size:22px;font-weight:600;color:var(--text)">143</div>
+            <div style="font-size:11px;color:var(--dim)">chamadas hoje</div>
+          </div>
+        </div>
+
+        <div class="card-head" style="background:var(--panel2);">
+          <div class="card-title">Tools Injetadas</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span class="tag tag-green">5 / 5 ativas</span>
+            <span style="font-family:var(--mono);font-size:10px;color:var(--dim)">bind_tools() em runtime</span>
+          </div>
+        </div>
+
+        <div class="tool-list">
+          <div class="tool-item">
+            <div class="tool-bullet" style="background:var(--accent)"></div>
+            <div class="tool-name">mcp_query</div>
+            <div class="tool-desc">Consulta o ERP via servidor MCP — pedidos, clientes, produtos, preços, estoque. Agnóstico ao ERP; o servidor MCP muda por cliente.</div>
+            <div class="tool-badges">
+              <span class="tag tag-blue">internal</span>
+              <span class="tag tag-gray">public</span>
+            </div>
+            <div class="tool-calls">~111 calls/dia</div>
+          </div>
+          <div class="tool-item">
+            <div class="tool-bullet" style="background:var(--yellow)"></div>
+            <div class="tool-name">generate_proposal</div>
+            <div class="tool-desc">Formata proposta comercial estruturada como output no chat. Web: markdown rico. WhatsApp: texto condensado.</div>
+            <div class="tool-badges">
+              <span class="tag tag-blue">internal</span>
+              <span class="tag tag-gray">public</span>
+            </div>
+            <div class="tool-calls">~89 calls/dia</div>
+          </div>
+          <div class="tool-item">
+            <div class="tool-bullet" style="background:var(--accent)"></div>
+            <div class="tool-name">knowledge_base_search</div>
+            <div class="tool-desc">Busca semântica no vector store interno — catálogo de produtos, tabelas de preço, políticas comerciais, scripts de vendas.</div>
+            <div class="tool-badges">
+              <span class="tag tag-blue">internal</span>
+              <span class="tag tag-gray">public</span>
+            </div>
+            <div class="tool-calls">~79 calls/dia</div>
+          </div>
+          <div class="tool-item">
+            <div class="tool-bullet" style="background:var(--green)"></div>
+            <div class="tool-name">web_search</div>
+            <div class="tool-desc">Pesquisa web — concorrência, mídia, notícias de mercado, análise competitiva por região.</div>
+            <div class="tool-badges">
+              <span class="tag tag-green">public</span>
+              <span class="tag tag-gray">public</span>
+            </div>
+            <div class="tool-calls">~49 calls/dia</div>
+          </div>
+          <div class="tool-item">
+            <div class="tool-bullet" style="background:var(--green)"></div>
+            <div class="tool-name">get_address_from_cep</div>
+            <div class="tool-desc">Validação de endereço, área de cobertura e logística por CEP.</div>
+            <div class="tool-badges">
+              <span class="tag tag-green">public</span>
+              <span class="tag tag-gray">public</span>
+            </div>
+            <div class="tool-calls">~26 calls/dia</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output formatter note -->
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Output Formatter</div>
+            <div class="card-sub">adaptação por canal — channel detectado via JWT</div>
+          </div>
+          <span class="tag tag-purple">ativo</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+          <div style="padding:16px 20px;border-right:1px solid var(--border);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span class="channel-pill ch-web" style="font-size:12px;padding:3px 10px">web</span>
+              <span style="font-size:12px;font-weight:600;color:var(--text)">Formato completo</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+              Markdown rico com tabelas, seções formatadas, títulos e subtítulos. Proposta completa com dados do cliente, produtos, preços e condições comerciais.
+            </div>
+          </div>
+          <div style="padding:16px 20px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span class="channel-pill ch-wa" style="font-size:12px;padding:3px 10px">whatsapp</span>
+              <span style="font-size:12px;font-weight:600;color:var(--text)">Formato condensado</span>
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.7;">
+              Texto plano sem tabelas. Apenas os dados essenciais: cliente, produtos principais, valor total e próximos passos. Sem formatação que quebre no WA.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ FERRAMENTAS ═══════════════ -->
+    <div class="screen" id="s-ferramentas">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Ferramentas</div>
+          <div class="page-desc">5 tools do Agente Comercial — agnósticas ao ERP, configuradas via MCP</div>
+        </div>
+        <button class="btn btn-primary">+ Nova ferramenta</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <div class="card-title">Tool Registry — Setor Comercial</div>
+            <div class="card-sub">instâncias únicas · injetadas em runtime via bind_tools()</div>
+          </div>
+          <div style="display:flex;gap:5px;">
+            <span class="filter-chip active" onclick="chipToggle(this)">todas</span>
+            <span class="filter-chip" onclick="chipToggle(this)">public</span>
+            <span class="filter-chip" onclick="chipToggle(this)">internal</span>
+          </div>
+        </div>
+
+        <div class="summary-bar">
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--accent)">3</div>
+            <div class="summary-label">internal<br><span style="font-size:10px;font-family:var(--mono)">todos os cargos</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--green)">2</div>
+            <div class="summary-label">public<br><span style="font-size:10px;font-family:var(--mono)">todos os cargos</span></div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-num" style="color:var(--muted)">0</div>
+            <div class="summary-label">bloqueadas<br><span style="font-size:10px;font-family:var(--mono)">deny list vazia</span></div>
+          </div>
+          <div class="summary-item" style="flex:1;">
+            <div style="font-size:12px;color:var(--dim);line-height:1.6;font-family:var(--mono)">
+              Nenhuma deny list interna no setor comercial.<br>Todos os cargos acessam todas as tools.
+            </div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Tool</th>
+                <th>Descrição</th>
+                <th>Tag IAM</th>
+                <th>Sensitivity</th>
+                <th>allowed_agents</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">mcp_query</td>
+                <td style="font-size:12px">Consulta ERP via servidor MCP. Endpoint configurável por cliente.</td>
+                <td><span class="tag tag-blue">internal</span></td>
+                <td><span class="tag tag-gray">public</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">agente_comercial</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativa</div></td>
+                <td><button class="row-btn">editar</button></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">generate_proposal</td>
+                <td style="font-size:12px">Formata proposta no chat. Adapta por canal via channel do JWT.</td>
+                <td><span class="tag tag-blue">internal</span></td>
+                <td><span class="tag tag-gray">public</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">agente_comercial</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativa</div></td>
+                <td><button class="row-btn">editar</button></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">knowledge_base_search</td>
+                <td style="font-size:12px">Busca semântica no vector store. Catálogo, preços, políticas.</td>
+                <td><span class="tag tag-blue">internal</span></td>
+                <td><span class="tag tag-gray">public</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">agente_comercial</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativa</div></td>
+                <td><button class="row-btn">editar</button></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">web_search</td>
+                <td style="font-size:12px">Pesquisa web — concorrência, mídia, análise de mercado.</td>
+                <td><span class="tag tag-green">public</span></td>
+                <td><span class="tag tag-gray">public</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">*</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativa</div></td>
+                <td><button class="row-btn">editar</button></td>
+              </tr>
+              <tr>
+                <td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">get_address_from_cep</td>
+                <td style="font-size:12px">Validação de endereço e área de cobertura por CEP.</td>
+                <td><span class="tag tag-green">public</span></td>
+                <td><span class="tag tag-gray">public</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--muted)">*</span></td>
+                <td><div class="status-dot"><span class="dot dot-green"></span>ativa</div></td>
+                <td><button class="row-btn">editar</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ CARGOS ═══════════════ -->
+    <div class="screen" id="s-cargos">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cargos & Acesso</div>
+          <div class="page-desc">Hierarquia do setor comercial — sem deny list interna, todos acessam o Agente Comercial</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;">
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Hierarquia do Setor</div>
+              <div class="card-sub">deny_tags acumuladas da hierarquia global</div>
+            </div>
+          </div>
+          <div style="padding:16px 20px;display:flex;flex-direction:column;gap:8px;">
+
+            <!-- Diretor -->
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);">
+              <div style="font-family:var(--mono);font-size:10px;font-weight:700;width:32px;height:32px;border-radius:8px;background:var(--yellow-s);border:1px solid var(--yellow-b);color:var(--yellow);display:flex;align-items:center;justify-content:center;flex-shrink:0">80</div>
+              <div style="flex:1">
+                <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Diretor</div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                  <span class="tag tag-red">admin</span>
+                  <span style="font-size:11px;color:var(--dim);align-self:center">herdado da hierarquia global</span>
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text)">1</div>
+                <div style="font-size:10px;color:var(--dim)">usuário</div>
+              </div>
+            </div>
+
+            <div style="padding-left:24px;display:flex;flex-direction:column;gap:8px;">
+              <!-- Gerente -->
+              <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);">
+                <div style="font-family:var(--mono);font-size:10px;font-weight:700;width:32px;height:32px;border-radius:8px;background:var(--accent-s);border:1px solid #bfdbfe;color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0">60</div>
+                <div style="flex:1">
+                  <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Gerente Comercial</div>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                    <span class="tag tag-red">admin</span>
+                    <span class="tag tag-red">payments</span>
+                    <span style="font-size:11px;color:var(--dim);align-self:center">herdado</span>
+                  </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;">
+                  <div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text)">1</div>
+                  <div style="font-size:10px;color:var(--dim)">usuário</div>
+                </div>
+              </div>
+
+              <div style="padding-left:24px;">
+                <!-- Vendedor -->
+                <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);">
+                  <div style="font-family:var(--mono);font-size:10px;font-weight:700;width:32px;height:32px;border-radius:8px;background:var(--panel);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0">40</div>
+                  <div style="flex:1">
+                    <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Vendedor/SDR</div>
+                    <div style="display:flex;gap:5px;flex-wrap:wrap;">
+                      <span class="tag tag-red">admin</span>
+                      <span class="tag tag-red">payments</span>
+                      <span class="tag tag-red">financial</span>
+                      <span style="font-size:11px;color:var(--dim);align-self:center">herdado</span>
+                    </div>
+                  </div>
+                  <div style="text-align:right;flex-shrink:0;">
+                    <div style="font-family:var(--mono);font-size:16px;font-weight:600;color:var(--text)">6</div>
+                    <div style="font-size:10px;color:var(--dim)">usuários</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Note -->
+            <div style="margin-top:4px;padding:12px 14px;background:var(--green-s);border:1px solid var(--green-b);border-radius:8px;display:flex;gap:10px;align-items:flex-start;">
+              <span style="font-size:14px">✓</span>
+              <div style="font-size:12px;color:var(--green);line-height:1.6;">
+                <strong>Sem deny list interna no setor.</strong> Todos os cargos acessam o Agente Comercial e todas as suas 5 tools. As restrições acima são herdadas da hierarquia global e bloqueiam apenas tools de outros setores (<code style="font-size:10px;background:rgba(15,123,68,.1);border:none;color:var(--green)">financial</code>, <code style="font-size:10px;background:rgba(15,123,68,.1);border:none;color:var(--green)">payments</code>, <code style="font-size:10px;background:rgba(15,123,68,.1);border:none;color:var(--green)">admin</code>).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Access matrix for this sector -->
+        <div class="card">
+          <div class="card-head"><div class="card-title">Acesso às Tools</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cargo</th>
+                  <th style="text-align:center">mcp</th>
+                  <th style="text-align:center">prop</th>
+                  <th style="text-align:center">kb</th>
+                  <th style="text-align:center">web</th>
+                  <th style="text-align:center">cep</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="font-size:12px;font-weight:600;color:var(--text)">Diretor</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;font-weight:600;color:var(--text)">Gerente</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                </tr>
+                <tr>
+                  <td style="font-size:12px;font-weight:600;color:var(--text)">Vendedor</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                  <td style="text-align:center;color:var(--green)">✓</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding:14px 16px;font-size:11px;color:var(--dim);font-family:var(--mono);border-top:1px solid var(--border);">
+            mcp = mcp_query · prop = generate_proposal<br>
+            kb = knowledge_base_search
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ═══════════════ AUDITORIA ═══════════════ -->
+    <div class="screen" id="s-auditoria">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Auditoria</div>
+          <div class="page-desc">Log de decisões do Agente Comercial — rastreabilidade por trace_id</div>
+        </div>
+        <button class="btn btn-ghost">↓ Exportar CSV</button>
+      </div>
+
+      <div class="stats-row-3">
+        <div class="stat-card">
+          <div class="stat-label">Decisões hoje</div>
+          <div class="stat-num">143</div>
+          <div class="stat-sub"><span class="tag tag-green">141 permitidas</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Bloqueadas hoje</div>
+          <div class="stat-num" style="color:var(--red)">2</div>
+          <div class="stat-sub"><span class="tag tag-red">agente fora do escopo</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Tools mais usadas</div>
+          <div class="stat-num">mcp</div>
+          <div class="stat-sub"><span class="tag tag-blue">78% das chamadas</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="filter-bar">
+          <span class="filter-chip active" onclick="chipToggle(this)">todos</span>
+          <span class="filter-chip" onclick="chipToggle(this)">denied</span>
+          <span class="filter-chip" onclick="chipToggle(this)">allowed</span>
+          <span class="filter-chip" onclick="chipToggle(this)">mcp_query</span>
+          <span class="filter-chip" onclick="chipToggle(this)">generate_proposal</span>
+          <div class="filter-sep"></div>
+          <input class="filter-input" placeholder="buscar usuário ou trace_id…">
+        </div>
+
+        <div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#0f7b44;width:22px;height:22px;font-size:9px">C</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Carlos Mendes</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Vendedor/SDR</div></div></div></div>
+            <div class="audit-tool">generate_proposal + mcp_query</div>
+            <div class="audit-reason">proposta gerada · cliente Fábrica Noroeste Ltda · 3 tools acionadas</div>
+            <div class="audit-channel"><span class="channel-pill ch-web">web</span></div>
+            <div class="audit-time">10:02:14</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#1a56db;width:22px;height:22px;font-size:9px">F</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Fernanda Rocha</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Gerente Comercial</div></div></div></div>
+            <div class="audit-tool">mcp_query</div>
+            <div class="audit-reason">consulta pipeline · pedidos em aberto do setor · padrão tag <code>internal</code></div>
+            <div class="audit-channel"><span class="channel-pill ch-web">web</span></div>
+            <div class="audit-time">09:51:03</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#7c3aed;width:22px;height:22px;font-size:9px">R</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Rafael Lima</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Vendedor/SDR</div></div></div></div>
+            <div class="audit-tool">generate_proposal</div>
+            <div class="audit-reason">proposta condensada · Distribuidora Sul · output formatter: WA mode</div>
+            <div class="audit-channel"><span class="channel-pill ch-wa">wa</span></div>
+            <div class="audit-time">09:44:29</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">NEGADO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#a05c00;width:22px;height:22px;font-size:9px">J</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">João Santos</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Vendedor/SDR</div></div></div></div>
+            <div class="audit-tool">web_search</div>
+            <div class="audit-reason">user_denial · exceção individual · tool bloqueada para este usuário</div>
+            <div class="audit-channel"><span class="channel-pill ch-web">web</span></div>
+            <div class="audit-time">09:11:47</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--red-s);color:var(--red);border:1px solid var(--red-b)">NEGADO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#a05c00;width:22px;height:22px;font-size:9px">J</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">João Santos</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Vendedor/SDR</div></div></div></div>
+            <div class="audit-tool">agente_rh</div>
+            <div class="audit-reason">role_denial · agente fora do escopo comercial · Vendedor não tem acesso</div>
+            <div class="audit-channel"><span class="channel-pill ch-web">web</span></div>
+            <div class="audit-time">09:11:02</div>
+          </div>
+          <div class="audit-row">
+            <span class="audit-decision" style="background:var(--green-s);color:var(--green);border:1px solid var(--green-b)">PERMITIDO</span>
+            <div class="audit-user"><div style="display:flex;align-items:center;gap:7px"><div class="avatar" style="background:#1a1916;width:22px;height:22px;font-size:9px">D</div><div><div style="font-size:12px;font-weight:500;color:var(--text)">Dir. Comercial</div><div style="font-size:10px;font-family:var(--mono);color:var(--dim)">Diretor</div></div></div></div>
+            <div class="audit-tool">web_search</div>
+            <div class="audit-reason">análise competitiva · concorrentes região Sul · tag <code>public</code></div>
+            <div class="audit-channel"><span class="channel-pill ch-web">web</span></div>
+            <div class="audit-time">09:22:55</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Edit overlay -->
+<div class="edit-overlay" id="edit-overlay" onclick="closeEdit(event)">
+  <div class="edit-panel" onclick="event.stopPropagation()">
+    <div class="edit-head">
+      <div>
+        <div class="edit-title" id="edit-title">Editar Usuário</div>
+        <div style="font-size:11px;color:var(--dim);font-family:var(--mono);margin-top:2px" id="edit-sub"></div>
+      </div>
+      <div class="edit-close" onclick="closeEdit()">×</div>
+    </div>
+    <div class="edit-body">
+      <div class="edit-sec">Dados</div>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input id="ep-name" type="text"></div>
+        <div class="field">
+          <label>Cargo</label>
+          <select id="ep-role">
+            <option>Diretor</option>
+            <option>Gerente Comercial</option>
+            <option>Vendedor/SDR</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>E-mail</label><input id="ep-email" type="email"></div>
+      <div class="field"><label>WhatsApp vinculado</label><input id="ep-wa" type="text" placeholder="Nenhum número vinculado"></div>
+
+      <div class="edit-sec">Exceções Individuais <span style="font-family:var(--mono);font-size:10px;font-weight:400;color:var(--dim);margin-left:6px">user_denials</span></div>
+      <div id="ep-deny-grid"></div>
+
+      <div class="edit-sec">Status da conta</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px">Desativar</button>
+        <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:12px;color:var(--red);border-color:var(--red-b)">Desvincular WA</button>
+      </div>
+    </div>
+    <div class="edit-footer">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="closeEdit()">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TOOLS = [
+  { name:'mcp_query',             tag:'internal', desc:'ERP via MCP' },
+  { name:'generate_proposal',     tag:'internal', desc:'Proposta no chat' },
+  { name:'knowledge_base_search', tag:'internal', desc:'Vector store' },
+  { name:'web_search',            tag:'public',   desc:'Pesquisa web' },
+  { name:'get_address_from_cep',  tag:'public',   desc:'Validação CEP' },
+];
+const TAG_C = {
+  internal:{ bg:'#e8f0fe', text:'#1a56db', border:'#bfdbfe' },
+  public:  { bg:'#e8f7f0', text:'#0f7b44', border:'#9fe8c3' },
+};
+
+function nav(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('s-' + id).classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.getAttribute('onclick')?.includes(`'${id}'`)) l.classList.add('active');
+  });
+}
+
+function chipToggle(el) {
+  el.closest('.filter-bar, .card-head').querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+const editDenied = new Set();
+function openEdit(name, email, role) {
+  document.getElementById('ep-name').value  = name;
+  document.getElementById('ep-email').value = email;
+  document.getElementById('ep-role').value  = role;
+  document.getElementById('ep-wa').value    = ['Fernanda Rocha','Carlos Mendes','Rafael Lima'].includes(name) ? '+55 11 9 9999-000' + (Math.floor(Math.random()*9)+1) : '';
+  document.getElementById('edit-title').textContent = name;
+  document.getElementById('edit-sub').textContent   = email;
+
+  editDenied.clear();
+  if (name === 'João Santos') editDenied.add('web_search');
+
+  const grid = document.getElementById('ep-deny-grid');
+  grid.innerHTML = '';
+  TOOLS.forEach(tool => {
+    const c = TAG_C[tool.tag];
+    const row = document.createElement('div');
+    row.className = 'deny-row' + (editDenied.has(tool.name) ? ' active-deny' : '');
+    row.innerHTML = `
+      <span class="deny-name">${tool.name}</span>
+      <span style="font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:3px;background:${c.bg};color:${c.text};border:1px solid ${c.border}">${tool.tag}</span>
+      <div class="deny-toggle"></div>`;
+    row.onclick = () => {
+      editDenied.has(tool.name) ? editDenied.delete(tool.name) : editDenied.add(tool.name);
+      row.classList.toggle('active-deny');
+    };
+    grid.appendChild(row);
+  });
+
+  document.getElementById('edit-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeEdit(e) {
+  if (e && e.target !== document.getElementById('edit-overlay')) return;
+  document.getElementById('edit-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', function() {
+    this.closest('.tabs').querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
