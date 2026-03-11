@@ -957,13 +957,21 @@ function buildGraph(role, uDenied, aDenied) {
     if (i > 0) edges.push({ from:`role_${roleNames[i-1]}`, to:`role_${r}`, type:'hier' });
   });
 
+  // Identity Registry (New detail)
+  nodes.push({ id:'identity', type:'registry', label:'Identity\nRegistry', x:W*0.22, y:H*0.5 });
+  edges.push({ from:`role_${role}`, to:'identity', type:'active' });
+
   // Policy engine
-  nodes.push({ id:'policy', type:'engine', label:'Policy\nEngine', x:W*0.38, y:H/2 });
-  edges.push({ from:`role_${role}`, to:'policy', type:'active' });
+  nodes.push({ id:'policy', type:'engine', label:'Policy\nEngine', x:W*0.38, y:H*0.5 });
+  edges.push({ from:'identity', to:'policy', type:'active' });
+
+  // Postgres (New detail)
+  nodes.push({ id:'postgres', type:'db', label:'PostgreSQL\n(Policies)', x:W*0.38, y:H*0.18 });
+  edges.push({ from:'postgres', to:'policy', type:'hier' });
 
   // Agent
   const agentBlocked = aDenied.has('agente_comercial');
-  nodes.push({ id:'agent', type:'agent', label:'Agente\nComercial', x:W*0.60, y:H/2, blocked:agentBlocked });
+  nodes.push({ id:'agent', type:'agent', label:'Agente\nComercial', x:W*0.60, y:H*0.5, blocked:agentBlocked });
   edges.push({ from:'policy', to:'agent', type: agentBlocked ? 'deny' : 'allow_thick' });
 
   // Tools (right)
@@ -980,6 +988,10 @@ function buildGraph(role, uDenied, aDenied) {
   // JWT
   nodes.push({ id:'jwt', type:'jwt', label:'JWT\nNexus', x:W*0.60 + 90, y:H*0.18 });
   edges.push({ from:'policy', to:'jwt', type:'ctx' });
+
+  // Redis Cache (New detail)
+  nodes.push({ id:'redis', type:'cache', label:'Redis\n(Cache)', x:W*0.38, y:H*0.82 });
+  edges.push({ from:'policy', to:'redis', type:'ctx' });
 
   return { nodes, edges };
 }
@@ -1026,9 +1038,12 @@ function drawGraph() {
     const pulse = i === GS.activeIdx;
     if      (n.type==='role')   drawRole(n, pulse);
     else if (n.type==='engine') drawEngine(n, pulse);
+    else if (n.type==='registry') drawRegistry(n, pulse);
     else if (n.type==='agent')  drawAgentNode(n, pulse);
     else if (n.type==='tool')   drawTool(n, pulse);
     else if (n.type==='jwt')    drawJWT(n, pulse);
+    else if (n.type==='cache')  drawCache(n, pulse);
+    else if (n.type==='db')     drawDB(n, pulse);
   });
 }
 
@@ -1059,6 +1074,16 @@ function drawRole(n, pulse) {
   ctx.fillText(n.label, n.x+r+5, n.y);
 }
 
+function drawRegistry(n, pulse) {
+  const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8); ctx.fillStyle='#f8fafc'; ctx.fill();
+  ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.globalAlpha=1; ctx.fillStyle='#475569';
+  ctx.font='600 10px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
 function drawEngine(n, pulse) {
   const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
   ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
@@ -1072,6 +1097,7 @@ function drawAgentNode(n, pulse) {
   const w=80,h=42,x=n.x-w/2,y=n.y-h/2;
   ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
   ctx.beginPath(); rr(x,y,w,h,8);
+
   if (n.blocked) { ctx.fillStyle='#fdf0ee'; ctx.fill(); ctx.strokeStyle='#f5b8b2'; ctx.lineWidth=1.5; ctx.stroke(); }
   else           { ctx.fillStyle='#e8f7f0'; ctx.fill(); ctx.strokeStyle='#9fe8c3'; ctx.lineWidth=1.5; ctx.stroke(); }
   ctx.globalAlpha=1;
@@ -1101,6 +1127,26 @@ function drawJWT(n, pulse) {
   ctx.fillStyle='#fffbeb'; ctx.fill(); ctx.strokeStyle='#fad97a'; ctx.lineWidth=1.5; ctx.stroke();
   ctx.globalAlpha=1; ctx.fillStyle='#a05c00';
   ctx.font='600 11px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
+function drawCache(n, pulse) {
+  const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8); ctx.fillStyle='#fdf2f8'; ctx.fill();
+  ctx.strokeStyle='#f9a8d4'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.globalAlpha=1; ctx.fillStyle='#be185d';
+  ctx.font='600 10px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
+}
+
+function drawDB(n, pulse) {
+  const w=76,h=40,x=n.x-w/2,y=n.y-h/2;
+  ctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  ctx.beginPath(); rr(x,y,w,h,8); ctx.fillStyle='#f0fdf4'; ctx.fill();
+  ctx.strokeStyle='#86efac'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.globalAlpha=1; ctx.fillStyle='#166534';
+  ctx.font='600 10px IBM Plex Mono,monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
   n.label.split('\n').forEach((l,i,a)=>ctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*13));
 }
 
@@ -1146,13 +1192,27 @@ async function runSim() {
   const globalDenyTags = ROLES[role]?.globalDenyTags || [];
   const agentBlocked   = agentDenied.has('agente_comercial');
 
+  // ── Step 1: Identity
   GS.activeIdx = GS.nodes.findIndex(n=>n.id===`role_${role}`);
-  await trace({ step:'1', type:'info', label:'Identity Registry',
-    desc:`JWT decodificado. E-mail <code>${email}</code> → user_id interno. Canal: <code>${channel}</code>` });
+  await trace({ step:'1', type:'info', label:'Identidade decodificada',
+    desc:`Bearer Token validado via Google OIDC. E-mail <code>${email}</code> resolvido.` });
 
-  await trace({ step:'2', type:'info', label:`Cargo resolvido: ${role}`,
+  // ── Step 1.1: Identity Registry (New detail in trace)
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='identity');
+  await trace({ step:'1.1', type:'info', label:'Identity Registry',
+    desc:`Mapeando grupos Google e metadados organizacionais para o user_id interno.` });
+
+  // ── Step 2: Policy resolution (Database)
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='postgres');
+  await trace({ step:'2', type:'info', label:'Fetch Policies (PostgreSQL)',
+    desc:`Recuperando regras de acesso persistidas para o cargo e departamento.` });
+
+  // ── Step 2.1: Role resolution
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='policy');
+  await trace({ step:'2.1', type:'info', label:`Cargo resolvido: ${role}`,
     desc:`Access level <code>${ROLES[role]?.level}</code>. Percorrendo árvore hierárquica para acumular deny_tags.` });
 
+  // Ancestry
   const chain=[]; let cur=role;
   while(cur){ chain.unshift(cur); cur=ROLES[cur]?.parent; }
   for(const r of chain){
@@ -1161,7 +1221,7 @@ async function runSim() {
       desc:`Tags bloqueadas: ${tags.map(t=>`<code>${t}</code>`).join(', ')} — afetam tools de outros setores` }, 150);
   }
 
-  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='policy');
+  // ── Step 3: user_denials
   if (userDenied.size > 0) {
     await trace({ step:'3', type:'fail', label:'user_denials encontradas',
       desc:`Exceções individuais: ${[...userDenied].map(t=>`<code>${t}</code>`).join(', ')}` });
@@ -1169,6 +1229,7 @@ async function runSim() {
     await trace({ step:'3', type:'ok', label:'user_denials: nenhuma', desc:'Sem exceções individuais para este usuário.' });
   }
 
+  // ── Step 4: Agent access
   GS.activeIdx = GS.nodes.findIndex(n=>n.id==='agent');
   if (agentBlocked) {
     await trace({ step:'4', type:'fail', label:'agente_comercial BLOQUEADO',
@@ -1180,10 +1241,22 @@ async function runSim() {
     await traceTools(globalDenyTags);
   }
 
+  // ── Step 5: Redis Cache (New detail in trace)
+  GS.activeIdx = GS.nodes.findIndex(n=>n.id==='redis');
+  await trace({ step:'5', type:'info', label:'Cache Policy (Redis)',
+    desc:`SecurityContext serializado e persistido com TTL de 3600s para otimização de latência.` });
+
+  // ── Step 6: JWT
   GS.activeIdx = GS.nodes.findIndex(n=>n.id==='jwt');
-  await trace({ step:'5', type:'ok', label:'JWT Nexus emitido',
+  await trace({ step:'6', type:'ok', label:'JWT Nexus emitido',
     desc:`Token RS256 com <code>available_agents[]</code> resolvido. Canal <code>${channel}</code>. output_mode: <code>${channel==='whatsapp'?'condensed':'full'}</code>` });
   GS.activeIdx = -1;
+
+  // Final check - ensure links to policy engine are bidirectional or conceptually correct
+  // In a real system, Policy Engine writes TO cache and reads FROM DB.
+  // The graph currently shows Postgres -> Policy and Redis -> Policy.
+  // Let's make Redis a bidirectional ctx-style dash if possible, or just Policy -> Redis for "writing to cache".
+  // Actually, let's keep it as is for "components involved".
 
   const allowed = TOOLS.filter(t => !userDenied.has(t.name) && !agentBlocked).length;
   const denied  = TOOLS.length - allowed;

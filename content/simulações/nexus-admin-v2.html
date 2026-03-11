@@ -354,7 +354,7 @@ canvas{display:block;}
       </div>
       <div class="drawer-section-body">
         <div style="font-size:11px;color:var(--dim);font-family:var(--mono);margin-bottom:10px">Desativar bloqueia o agente inteiro — tools não chegam a ser avaliadas.</div>
-        <div class="agent-toggle-list" id="d-agent-toggles"></div>
+        <div class="agent-toggle-list" id="agent-toggle-list"></div>
       </div>
     </div>
 
@@ -550,12 +550,15 @@ function closeDrawer() {
 
 function switchDrawerTab(id, btn) {
   document.querySelectorAll('.drawer-tab').forEach(b=>b.classList.remove('active'));
-  // find the right button if called programmatically
-  document.querySelectorAll('.drawer-tab').forEach(b => {
-    if ((id==='perms' && b.textContent==='Permissões') ||
-        (id==='sim'   && b.textContent==='Simular')) b.classList.add('active');
-  });
-  if (btn) { document.querySelectorAll('.drawer-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+  if (btn) {
+    btn.classList.add('active');
+  } else {
+    // find the right button if called programmatically
+    document.querySelectorAll('.drawer-tab').forEach(b => {
+      if ((id==='perms' && b.textContent==='Permissões') ||
+          (id==='sim'   && b.textContent==='Simular')) b.classList.add('active');
+    });
+  }
   document.querySelectorAll('.drawer-tab-view').forEach(v=>v.classList.toggle('active', v.id==='dtab-'+id));
   if (id==='sim') {
     requestAnimationFrame(()=>requestAnimationFrame(()=>{ initCanvas(); rebuildGraph(); }));
@@ -611,7 +614,7 @@ function renderToolToggles() {
 }
 
 function renderAgentToggles() {
-  const list = document.getElementById('d-agent-toggles');
+  const list = document.getElementById('agent-toggle-list');
   list.innerHTML='';
   AGENTS.forEach(a=>{
     const blocked=draftAgentDenials.has(a.name);
@@ -704,11 +707,25 @@ function buildGraph(role,uDenied,aDenied) {
       x:hx,y:hy0+i*hyStep+hyStep/2,active:r===role,ancestor:isAncestor(r,role)});
     if(i>0) edges.push({from:`role_${roleNames[i-1]}`,to:`role_${r}`,type:'hier'});
   });
+
+  // Identity Registry (Detalhamento)
+  nodes.push({id:'identity',type:'registry',label:'Identity\nRegistry',x:W*0.22,y:H/2});
+  edges.push({from:`role_${role}`,to:'identity',type:'active'});
+
+  // Policy engine
   nodes.push({id:'policy',type:'engine',label:'Policy\nEngine',x:W*0.38,y:H/2});
-  edges.push({from:`role_${role}`,to:'policy',type:'active'});
+  edges.push({from:'identity',to:'policy',type:'active'});
+
+  // Postgres (Detalhamento)
+  nodes.push({id:'postgres',type:'db',label:'PostgreSQL\n(Policies)',x:W*0.38,y:H*0.18});
+  edges.push({from:'postgres',to:'policy',type:'hier'});
+
+  // Agent
   const agentBlocked=aDenied.has('agente_comercial');
   nodes.push({id:'agent',type:'agent',label:'Agente\nComercial',x:W*0.61,y:H/2,blocked:agentBlocked});
   edges.push({from:'policy',to:'agent',type:agentBlocked?'deny':'allow_thick'});
+
+  // Tools (right)
   const tx=W-76,ty0=14,tyStep=(H-28)/TOOLS.length;
   TOOLS.forEach((tool,i)=>{
     const allowed=!uDenied.has(tool.name)&&!agentBlocked;
@@ -716,6 +733,15 @@ function buildGraph(role,uDenied,aDenied) {
       x:tx,y:ty0+i*tyStep+tyStep/2,allowed,tag:tool.tag});
     edges.push({from:'agent',to:`tool_${tool.name}`,type:allowed?'allow':'deny'});
   });
+
+  // JWT
+  nodes.push({id:'jwt',type:'jwt',label:'JWT\nNexus',x:W*0.61+80,y:H*0.18});
+  edges.push({from:'policy',to:'jwt',type:'ctx'});
+
+  // Redis Cache (Detalhamento)
+  nodes.push({id:'redis',type:'cache',label:'Redis\n(Cache)',x:W*0.38,y:H*0.82});
+  edges.push({from:'policy',to:'redis',type:'ctx'});
+
   return {nodes,edges};
 }
 
@@ -739,10 +765,12 @@ function drawGraph() {
     const col={hier:'#d0cdc3',active:'#1a56db',allow_thick:'#9fe8c3',allow:'#9fe8c3',deny:'#f5b8b2',ctx:'#fad97a'}[e.type]||'#d0cdc3';
     sctx.beginPath();sctx.strokeStyle=col;
     sctx.lineWidth=['active','allow_thick'].includes(e.type)?2:1;
-    sctx.setLineDash(['active','allow_thick'].includes(e.type)?[5,4]:[]);
-    if(['active','allow_thick'].includes(e.type))sctx.lineDashOffset=-animT*.07;
+    sctx.setLineDash(['active','allow_thick','ctx'].includes(e.type)?[5,4]:[]);
+    if(['active','allow_thick','ctx'].includes(e.type))sctx.lineDashOffset=-animT*.07;
     const mx=(from.x+to.x)/2;
-    sctx.moveTo(from.x,from.y);sctx.bezierCurveTo(mx,from.y,mx,to.y,to.x,to.y);sctx.stroke();
+    sctx.moveTo(from.x,from.y);
+    sctx.bezierCurveTo(mx,from.y,mx,to.y,to.x,to.y);
+    sctx.stroke();
     sctx.setLineDash([]);
     if(e.type!=='hier')arrow(to.x,to.y,from.x,from.y,col,e.type==='active'?2:1.5);
   });
@@ -752,6 +780,10 @@ function drawGraph() {
     else if(n.type==='engine')drawEngine(n,pulse);
     else if(n.type==='agent')drawAgent(n,pulse);
     else if(n.type==='tool')drawTool(n,pulse);
+    else if(n.type==='registry')drawRegistry(n,pulse);
+    else if(n.type==='db')drawDB(n,pulse);
+    else if(n.type==='cache')drawCache(n,pulse);
+    else if(n.type==='jwt')drawJWT(n,pulse);
   });
 }
 
@@ -766,18 +798,29 @@ function arrow(tx,ty,fx,fy,col,lw){
 
 function drawRole(n,pulse){
   const r=15,al=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
-  sctx.globalAlpha=al;sctx.beginPath();sctx.arc(n.x,n.y,r,0,Math.PI*2);
+  sctx.globalAlpha=al;
+  sctx.beginPath();sctx.arc(n.x,n.y,r,0,Math.PI*2);
   if(n.active){sctx.fillStyle='#1a56db';sctx.fill();sctx.strokeStyle='#1547c0';sctx.lineWidth=2;sctx.stroke();}
   else if(n.ancestor){sctx.fillStyle='#e8f0fe';sctx.fill();sctx.strokeStyle='#bfdbfe';sctx.lineWidth=1.5;sctx.stroke();}
   else{sctx.fillStyle='#fafaf8';sctx.fill();sctx.strokeStyle='#d0cdc3';sctx.lineWidth=1;sctx.stroke();}
   sctx.globalAlpha=1;
   sctx.fillStyle=n.active?'#fff':(n.ancestor?'#1a56db':'#a8a49c');
   sctx.font=`${n.active?'600':'400'} 9px IBM Plex Mono,monospace`;
-  sctx.textAlign='center';sctx.textBaseline='middle';
+  sctx.textAlign='center'; sctx.textBaseline='middle';
   sctx.fillText(String(n.level),n.x,n.y);
   sctx.fillStyle=n.active?'#1a1916':(n.ancestor?'#1a56db':'#a8a49c');
   sctx.font=`${n.active?'600':'400'} 10px IBM Plex Sans,sans-serif`;
   sctx.textAlign='left';sctx.fillText(n.label,n.x+r+4,n.y);
+}
+
+function drawRegistry(n,pulse){
+  const w=68,h=34,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);sctx.fillStyle='#f8fafc';sctx.fill();
+  sctx.strokeStyle='#cbd5e1';sctx.lineWidth=1.5;sctx.stroke();
+  sctx.globalAlpha=1;sctx.fillStyle='#475569';
+  sctx.font='600 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
 }
 
 function drawEngine(n,pulse){
@@ -795,7 +838,8 @@ function drawAgent(n,pulse){
   sctx.beginPath();rr(x,y,w,h,7);
   if(n.blocked){sctx.fillStyle='#fdf0ee';sctx.fill();sctx.strokeStyle='#f5b8b2';sctx.lineWidth=1.5;sctx.stroke();}
   else{sctx.fillStyle='#e8f7f0';sctx.fill();sctx.strokeStyle='#9fe8c3';sctx.lineWidth=1.5;sctx.stroke();}
-  sctx.globalAlpha=1;sctx.fillStyle=n.blocked?'#c0392b':'#0f7b44';
+  sctx.globalAlpha=1;
+  sctx.fillStyle=n.blocked?'#c0392b':'#0f7b44';
   sctx.font='600 10px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
   n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
 }
@@ -807,17 +851,45 @@ function drawTool(n,pulse){
   if(n.allowed){sctx.fillStyle='#e8f7f0';sctx.fill();sctx.strokeStyle='#9fe8c3';}
   else{sctx.fillStyle='#fdf0ee';sctx.fill();sctx.strokeStyle='#f5b8b2';}
   sctx.lineWidth=1;sctx.stroke();
-  sctx.globalAlpha=1;sctx.fillStyle=n.allowed?'#0f7b44':'#c0392b';
+  sctx.globalAlpha=1;
+  sctx.fillStyle=n.allowed?'#0f7b44':'#c0392b';
   sctx.font='500 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
   let lbl=n.label;if(lbl.length>13)lbl=lbl.slice(0,12)+'…';
   sctx.fillText(lbl,n.x,n.y);
 }
 
+function drawJWT(n,pulse){
+  const w=68,h=34,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);sctx.fillStyle='#fffbeb';sctx.fill();sctx.strokeStyle='#fad97a';sctx.lineWidth=1.5;sctx.stroke();
+  sctx.globalAlpha=1;sctx.fillStyle='#a05c00';
+  sctx.font='600 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
+}
+
+function drawCache(n,pulse){
+  const w=68,h=34,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);sctx.fillStyle='#fdf2f8';sctx.fill();sctx.strokeStyle='#f9a8d4';sctx.lineWidth=1.5;sctx.stroke();
+  sctx.globalAlpha=1;sctx.fillStyle='#be185d';
+  sctx.font='600 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
+}
+
+function drawDB(n,pulse){
+  const w=68,h=34,x=n.x-w/2,y=n.y-h/2;
+  sctx.globalAlpha=pulse?(0.7+0.3*Math.sin(animT*.1)):1;
+  sctx.beginPath();rr(x,y,w,h,7);sctx.fillStyle='#f0fdf4';sctx.fill();sctx.strokeStyle='#86efac';sctx.lineWidth=1.5;sctx.stroke();
+  sctx.globalAlpha=1;sctx.fillStyle='#166534';
+  sctx.font='600 9px IBM Plex Mono,monospace';sctx.textAlign='center';sctx.textBaseline='middle';
+  n.label.split('\n').forEach((l,i,a)=>sctx.fillText(l,n.x,n.y+(i-(a.length-1)/2)*12));
+}
+
 function rr(x,y,w,h,r){
-  sctx.moveTo(x+r,y);sctx.lineTo(x+w-r,y);sctx.arcTo(x+w,y,x+w,y+r,r);
-  sctx.lineTo(x+w,y+h-r);sctx.arcTo(x+w,y+h,x+w-r,y+h,r);
-  sctx.lineTo(x+r,y+h);sctx.arcTo(x,y+h,x,y+h-r,r);
-  sctx.lineTo(x,y+r);sctx.arcTo(x,y,x+r,y,r);sctx.closePath();
+  sctx.moveTo(x+r,y);sctx.lineTo(x+w-r,y); sctx.arcTo(x+w,y,x+w,y+r,r);
+  sctx.lineTo(x+w,y+h-r); sctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  sctx.lineTo(x+r,y+h); sctx.arcTo(x,y+h,x,y+h-r,r);
+  sctx.lineTo(x,y+r); sctx.arcTo(x,y,x+r,y,r); sctx.closePath();
 }
 
 function startAnim(){
@@ -859,8 +931,19 @@ async function runSimulation() {
   await strace({step:'1',type:'info',label:'Identity Registry',
     desc:`Usuário <code>${activeUser.email}</code> mapeado. Canal: <code>${activeUser.channel}</code>`});
 
-  // Step 2 — role
-  await strace({step:'2',type:'info',label:`Cargo resolvido: ${role}`,
+  // Step 1.1 - Identity (Detail)
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='identity');
+  await strace({step:'1.1',type:'info',label:'Metadata Resolver',
+    desc:`Bearer Token decodificado. Grupos Google carregados.`});
+
+  // Step 2 — resolution
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='postgres');
+  await strace({step:'2',type:'info',label:'Fetch Policies (PostgreSQL)',
+    desc:`Recuperando regras de acesso persistidas para o cargo e departamento.`});
+
+  // Step 2.1 — role
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='policy');
+  await strace({step:'2.1',type:'info',label:`Cargo resolvido: ${role}`,
     desc:`Access level <code>${ROLES[role]?.level}</code>. Percorrendo hierarquia para acumular deny_tags.`});
 
   const chain=[];let cur=role;
@@ -872,7 +955,6 @@ async function runSimulation() {
   }
 
   // Step 3 — user_denials
-  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='policy');
   if(draftDenials.size>0){
     await strace({step:'3',type:'fail',label:'user_denials encontradas',
       desc:`Exceções: ${[...draftDenials].map(t=>`<code>${t}</code>`).join(', ')}`});
@@ -902,9 +984,21 @@ async function runSimulation() {
         result:denied?'deny':'allow'},80);
     }
   }
+
+  // Step 5 — Cache
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='redis');
+  await strace({step:'5',type:'info',label:'Cache Policy (Redis)',
+    desc:`SecurityContext serializado e persistido com TTL de 3600s.`});
+
+  // Step 6 — JWT
+  GS.activeIdx=GS.nodes.findIndex(n=>n.id==='jwt');
+  await strace({step:'6',type:'ok',label:'JWT Nexus emitido',
+    desc:`Token RS256 gerado com metadados de output por canal.`});
+
   GS.activeIdx=-1;
 
   const allowed=TOOLS.filter(t=>!draftDenials.has(t.name)&&!agentBlocked).length;
+
   document.getElementById('sim-run-hint').textContent=`Trace concluído · ${allowed} tools permitidas · ${TOOLS.length-allowed} bloqueadas`;
   btn.disabled=false; btn.textContent='▶ Executar trace';
 }
